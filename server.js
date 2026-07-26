@@ -142,19 +142,36 @@ app.use((req, res) => {
 });
 
 // =====================================================
-// STARTUP
+// LAZY INIT MIDDLEWARE FOR VERCEL / SERVERLESS
+// =====================================================
+let isDbInitialized = false;
+
+app.use(async (req, res, next) => {
+  if (!isDbInitialized) {
+    try {
+      if (process.env.MONGODB_URI) {
+        await initDatabase();
+      }
+      initGemini();
+      isDbInitialized = true;
+    } catch (err) {
+      console.error('Lazy init error:', err.message);
+    }
+  }
+  next();
+});
+
+// =====================================================
+// STARTUP (Only when running directly, not on Vercel)
 // =====================================================
 const PORT = process.env.PORT || 3000;
 
 async function start() {
   try {
-    // Initialize MongoDB
     await initDatabase();
-
-    // Initialize Gemini
     initGemini();
+    isDbInitialized = true;
 
-    // Start server
     server.listen(PORT, () => {
       console.log('\n╔════════════════════════════════════════════╗');
       console.log('║       🤖 AI Agent Platform - ONLINE        ║');
@@ -170,10 +187,13 @@ async function start() {
 
   } catch (err) {
     console.error('❌ Failed to start server:', err.message);
-    process.exit(1);
   }
 }
 
-start();
+if (!process.env.VERCEL && require.main === module) {
+  start();
+}
 
-module.exports = { app, server, io };
+module.exports = app;
+module.exports.app = app;
+module.exports.server = server;
