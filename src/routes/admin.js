@@ -77,11 +77,29 @@ router.post('/businesses', async (req, res) => {
     };
 
     const b = await businesses.create(data);
-    // Auto-create widget integration
     await integrations.upsert(b._id, 'widget', {}, true);
     res.status(201).json(b);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- 1-CLICK CREATE BUSINESS FROM WEBSITE URL ----
+router.post('/businesses/create-from-url', async (req, res) => {
+  try {
+    const { websiteUrl } = req.body;
+    if (!websiteUrl) return res.status(400).json({ error: 'websiteUrl is required' });
+
+    const { generateBusinessFromUrl } = require('../utils/scraper');
+    const autoData = await generateBusinessFromUrl(websiteUrl);
+
+    const b = await businesses.create(autoData);
+    await integrations.upsert(b._id, 'widget', {}, true);
+
+    res.status(201).json({ success: true, business: b });
+  } catch (err) {
+    console.error('Create from URL error:', err);
+    res.status(500).json({ error: 'Failed to create business from URL: ' + err.message });
   }
 });
 
