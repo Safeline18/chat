@@ -169,4 +169,13 @@ Provide at least 10 to 15 comprehensive Q&As in "knowledge_base" covering:
   };
 }
 
-module.exports = { generateBusinessFromUrl, cleanHtmlText };
+async function scrapeWebsite(websiteUrl) {
+  const autoData = await generateBusinessFromUrl(websiteUrl);
+  return {
+    rawText: autoData.description_ar || '',
+    kbItems: autoData.knowledge_base || [],
+    summary: autoData.description_ar || ''
+  };
+}
+
+module.exports = { generateBusinessFromUrl, scrapeWebsite, cleanHtmlText };
