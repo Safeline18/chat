@@ -147,10 +147,12 @@ async function generateResponse(business, conversationId, userMessage, channel =
       const systemPrompt = await buildRAGSystemPrompt(business, userMessage, detectedInfo);
 
       const candidateModels = [
+        'gemini-flash-latest',
+        'gemini-pro-latest',
+        'gemini-1.5-flash-latest',
         process.env.GEMINI_MODEL,
         'gemini-2.0-flash',
-        'gemini-1.5-flash',
-        'gemini-1.5-pro'
+        'gemini-1.5-flash'
       ].filter((v, i, a) => v && a.indexOf(v) === i);
 
       for (const modelName of candidateModels) {
