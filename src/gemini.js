@@ -1,7 +1,7 @@
 // =====================================================
-// AI Agent Platform - Gemini AI Engine + Smart Fallback
+// AI Agent Platform - Gemini AI Engine + Ultra-Human Fallback
 // =====================================================
-const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 let genAI;
 
@@ -22,27 +22,15 @@ function initGemini() {
 // =====================================================
 function detectLanguage(text) {
   const arabicPattern = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
-  const chinesePattern = /[\u4E00-\u9FFF]/;
-  const japanesePattern = /[\u3040-\u309F\u30A0-\u30FF]/;
-  const koreanPattern = /[\uAC00-\uD7AF]/;
-
   if (arabicPattern.test(text)) return 'ar';
-  if (chinesePattern.test(text)) return 'zh';
-  if (japanesePattern.test(text)) return 'ja';
-  if (koreanPattern.test(text)) return 'ko';
   return 'en';
 }
 
 // =====================================================
-// SYSTEM PROMPT BUILDER
+// SYSTEM PROMPT BUILDER (Ultra Human-like)
 // =====================================================
 function buildSystemPrompt(business, detectedLang) {
-  const langInstructions = {
-    ar: 'تحدث باللغة العربية الفصحى البسيطة والمفهومة.',
-    en: 'Respond in clear, professional English.',
-  };
-
-  const agentName = detectedLang === 'ar' ? (business.agent_name_ar || business.agent_name) : business.agent_name;
+  const agentName = detectedLang === 'ar' ? (business.agent_name_ar || business.agent_name || 'هالة') : (business.agent_name || 'Hala');
   const businessName = detectedLang === 'ar' ? (business.name_ar || business.name) : business.name;
   const businessDesc = detectedLang === 'ar' ? (business.description_ar || business.description) : business.description;
 
@@ -50,33 +38,27 @@ function buildSystemPrompt(business, detectedLang) {
     try {
       const kb = typeof business.knowledge_base === 'string' ? JSON.parse(business.knowledge_base || '[]') : (business.knowledge_base || []);
       if (!kb.length) return '';
-      return '\n\n## Knowledge Base:\n' + kb.map(i => `Q: ${i.question}\nA: ${i.answer}`).join('\n\n');
+      return '\n\n## Knowledge Base:\n' + kb.map(i => `سؤال: ${i.question}\nإجابة: ${i.answer}`).join('\n\n');
     } catch { return ''; }
   })();
 
-  return `You are ${agentName}, a professional AI customer service representative for "${businessName}".
+  return `أنت انسان حقيقي يعمل كممثل خدمة عملاء لشركة "${businessName}" واسمك هو "${agentName}".
 
-## Identity & Personality:
-- Name: ${agentName}
-- Business: ${businessName}
-- Industry: ${business.industry || 'general'}
-- You are warm, empathetic, professional, and genuinely helpful.
-- Use appropriate emojis occasionally to feel friendly.
+## قواعد الشخصية والسلوك (Human Character Rules):
+1. **الاسم والهوية**: اسمك "${agentName}". إذا سألك العميل "ما اسمك؟" أو "من أنت؟"، أجب ببساطة وبشكل بشري لطيف بأن اسمك "${agentName}" وتعمل في خدمة عملاء شركة "${businessName}".
+2. **الطبيعة البشرية**: تتحدث بطبيعية تامة مثل إنسان لبق وودود. تجنب الإجابات الجافة أو المكررة.
+3. **تعدد اللغات**: تحدث بنفس اللغة والمنظور الذي يستخدمه العميل (عربي فصحي/عامية، أو إنجليزي).
+4. **الخدمات والمعلومات**: اشرح خدمات الشركية بدقة بناءً على المعلومات التالية:
 
-## Business Information:
-${businessDesc || 'A professional business committed to excellent customer service.'}
+## معلومات الشركة:
+${businessDesc || 'شركة متخصصة في تقديم أفضل الخدمات للعملاء.'}
 ${knowledgeBase}
 
-## Communication Guidelines:
-1. **Language**: ${langInstructions[detectedLang] || langInstructions.en} ALWAYS respond in the SAME language the customer uses.
-2. **Tone**: Professional yet warm and friendly.
-3. Keep conversation history context in mind.
-
-${business.system_prompt ? `\n## Additional Instructions:\n${business.system_prompt}` : ''}`;
+${business.system_prompt ? `\n## تعليمات إضافية:\n${business.system_prompt}` : ''}`;
 }
 
 // =====================================================
-// SMART KB FALLBACK ENGINE
+// SMART KB & HUMAN FALLBACK ENGINE
 // =====================================================
 function findKbFallback(business, userMessage, detectedLang) {
   let kb = [];
@@ -87,7 +69,33 @@ function findKbFallback(business, userMessage, detectedLang) {
   const text = (userMessage || '').toLowerCase().trim();
   const isArabic = detectedLang === 'ar' || /[\u0600-\u06FF]/.test(text);
 
-  // 1. Direct or keyword match in KB
+  const agentName = isArabic ? (business.agent_name_ar || business.agent_name || 'هالة') : (business.agent_name || 'Hala');
+  const businessName = isArabic ? (business.name_ar || business.name) : business.name;
+  const businessDesc = isArabic ? (business.description_ar || business.description) : business.description;
+
+  // 1. Ask Name Query ("اسمك ايه", "مين انتي", "شو اسمك", "who are you", "what is your name")
+  if (text.includes('اسمك') || text.includes('من انت') || text.includes('من أنت') || text.includes('مين انت') || text.includes('who are you') || text.includes('your name')) {
+    return isArabic ?
+      `أهلاً بك! أنا ${agentName}، المساعد الافتراضي لـ ${businessName} 😊 كيف يمكنني مساعدتك اليوم؟` :
+      `Hello! I am ${agentName}, virtual assistant for ${businessName} 😊 How can I help you today?`;
+  }
+
+  // 2. Services Query ("خدماتك", "ايش خدماتك", "ما هي خدماتكم", "خدماتكم", "services", "what do you offer")
+  if (text.includes('خدمات') || text.includes('خدماتك') || text.includes('تقدمون') || text.includes('تعملوا') || text.includes('service') || text.includes('offer')) {
+    if (kb.length > 0) {
+      const mainServices = kb.slice(0, 4).map(k => `• ${k.question}: ${k.answer}`).join('\n\n');
+      return isArabic ?
+        `أهلاً بك! نقدم في ${businessName} مجموعة متكاملة من الخدمات المتميزة:\n\n${mainServices}\n\nهل تود استفساراً عن خدمة محددة؟ 😊` :
+        `Welcome! At ${businessName}, we offer a comprehensive range of services:\n\n${mainServices}\n\nWould you like more details on a specific service? 😊`;
+    }
+    if (businessDesc) {
+      return isArabic ?
+        `أهلاً بك! في ${businessName} نقوم بـ: ${businessDesc}. يسعدنا جداً إجابة أي تفاصيل تود معرفتها!` :
+        `Welcome! At ${businessName}, we specialize in: ${businessDesc}. We are happy to answer any questions!`;
+    }
+  }
+
+  // 3. Direct KB Match
   for (const item of kb) {
     const q = (item.question || '').toLowerCase();
     if (q && (text.includes(q) || q.includes(text))) {
@@ -95,7 +103,7 @@ function findKbFallback(business, userMessage, detectedLang) {
     }
   }
 
-  // 2. Word overlap match
+  // 4. Overlap Match
   const words = text.split(/\s+/).filter(w => w.length > 2);
   let bestMatch = null;
   let maxOverlap = 0;
@@ -117,25 +125,24 @@ function findKbFallback(business, userMessage, detectedLang) {
     return bestMatch;
   }
 
-  // 3. Greetings
-  if (text.includes('مرحبا') || text.includes('هلا') || text.includes('السلام') || text.includes('أهلا') || text.includes('كيف حالك') || text.includes('hello') || text.includes('hi') || text.includes('hey')) {
-    const welcome = isArabic ? (business.welcome_message_ar || business.welcome_message) : business.welcome_message;
-    return welcome || (isArabic ?
-      `أهلاً وسهلاً بك في ${business.name_ar || business.name}! 😊 كيف يمكنني مساعدتك اليوم؟` :
-      `Hello! Welcome to ${business.name}. How can I assist you today? 😊`);
+  // 5. Greetings
+  if (text.includes('مرحبا') || text.includes('هلا') || text.includes('السلام') || text.includes('أهلا') || text.includes('كيف حالك') || text.includes('اخبارك') || text.includes('hello') || text.includes('hi')) {
+    return isArabic ?
+      `أهلاً وسهلاً بك في ${businessName}! 😊 أنا ${agentName}، ويسعدني تواصلك معنا. كيف أستطيع مساعدتك اليوم؟` :
+      `Hello! Welcome to ${businessName}! 😊 I am ${agentName}, happy to connect with you. How can I help today?`;
   }
 
-  // 4. Working hours
+  // 6. Working hours
   if (text.includes('مواعيد') || text.includes('وقت') || text.includes('ساعات') || text.includes('دوام') || text.includes('hours') || text.includes('time')) {
     return isArabic ?
-      `أهلاً بك! ساعات العمل لدى ${business.name_ar || business.name} تبدأ من الساعة 8:00 صباحاً وحتى 5:00 مساءً من الأحد إلى الخميس.` :
-      `Hello! Our working hours at ${business.name} are Sunday to Thursday, 8:00 AM to 5:00 PM.`;
+      `أهلاً بك! ساعات العمل لدى ${businessName} تبدأ من الساعة 8:00 صباحاً وحتى 5:00 مساءً من الأحد إلى الخميس.` :
+      `Hello! Our working hours at ${businessName} are Sunday to Thursday, 8:00 AM to 5:00 PM.`;
   }
 
-  // 5. Default business response
+  // 7. General Friendly Response
   return isArabic ?
-    `أهلاً بك في ${business.name_ar || business.name}! 🌸 يسعدنا جداً تواصلك معنا وإجابة جميع استفساراتك. كيف يمكننا مساعدتك بخصوص خدماتنا اليوم؟` :
-    `Welcome to ${business.name}! 🌸 We are glad to connect with you. How can we help you with our services today?`;
+    `أهلاً بك في ${businessName}! 🌸 أنا ${agentName} ويسعدني تواصلك. يسعدنا إجابة كافة استفساراتك عن خدماتنا أو تفاصيل شحناتك وساعات العمل.` :
+    `Welcome to ${businessName}! 🌸 I am ${agentName}. We are glad to help you with any questions about our services or working hours!`;
 }
 
 // =====================================================
@@ -186,9 +193,8 @@ async function generateResponse(business, conversationId, userMessage, channel =
     }
   }
 
-  // Fallback to Knowledge Base / Smart Rules if AI fails
+  // Fallback to Knowledge Base / Human Rules if AI fails
   if (!responseText) {
-    console.log('💡 Using Smart KB Fallback Engine for response');
     responseText = findKbFallback(business, userMessage, detectedLang);
   }
 
@@ -203,9 +209,6 @@ async function generateResponse(business, conversationId, userMessage, channel =
   return { text: responseText, language: detectedLang, conversationId };
 }
 
-// =====================================================
-// TYPING DELAY SIMULATION
-// =====================================================
 function calculateTypingDelay(text) {
   const words = (text || '').split(' ').length;
   const baseDelay = Math.min(words * 60, 2000);

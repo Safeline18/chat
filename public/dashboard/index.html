@@ -1350,12 +1350,23 @@
 
       <!-- TAB: Knowledge Base -->
       <div id="tab-knowledge" style="display:none;">
+        <div style="background:rgba(108,99,255,0.08);border:1px dashed rgba(108,99,255,0.3);border-radius:var(--radius-sm);padding:16px;margin-bottom:20px;">
+          <label class="form-label" style="font-weight:700;color:var(--accent);">🌐 قراءة محتوى موقعك الإلكتروني تلقائياً (Website Auto Scraper)</label>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">أدخل رابط موقعك وسيقوم الذكاء الاصطناعي بقراءة الخدمات والمعلومات وتدريب المساعد عليها فوراً:</p>
+          <div style="display:flex;gap:10px;">
+            <input class="form-input" id="scrapeUrlInput" placeholder="https://yourwebsite.com" dir="ltr" style="flex:1;">
+            <button class="btn btn-primary" id="scrapeBtn" onclick="runWebsiteScraper()">
+              <i class="fas fa-magic"></i> قراءة وتدريب الـ AI
+            </button>
+          </div>
+        </div>
+
         <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">
-          أضف الأسئلة الشائعة والمعلومات التي تريد المساعد أن يعرفها بدقة.
+          الأسئلة الشائعة والمعلومات التدريبية الخاصة بالنشاط:
         </p>
         <div id="kbItems"></div>
         <button class="btn btn-secondary" onclick="addKbItem()" style="width:100%;margin-top:8px;">
-          <i class="fas fa-plus"></i> إضافة سؤال وجواب
+          <i class="fas fa-plus"></i> إضافة سؤال وجواب يدوياً
         </button>
       </div>
     </div>
@@ -1860,6 +1871,40 @@ function renderKbItems() {
       </div>
     </div>
   `).join('');
+}
+
+async function runWebsiteScraper() {
+  const bizId = state.currentEditBiz?.id || state.currentEditBiz?._id;
+  const url = document.getElementById('scrapeUrlInput')?.value?.trim();
+
+  if (!url) {
+    showToast('يرجى كتابة رابط الموقع أولاً', 'error');
+    return;
+  }
+
+  if (!bizId) {
+    showToast('احفظ النشاط أولاً ثم استخدم خاصية قراءة الموقع', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('scrapeBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري قراءة وتدريب الـ AI...';
+
+  try {
+    const data = await api(`/api/admin/businesses/${bizId}/scrape`, 'POST', { websiteUrl: url });
+    showToast(`تم قراءة موقعك وتدريب الـ AI بنجاح! 🎉 (استُخرجت ${data.count} معلومة)`, 'success');
+    
+    // Refresh business knowledge base
+    const updatedBiz = await api(`/api/admin/businesses/${bizId}`);
+    state.kbItems = typeof updatedBiz.knowledge_base === 'string' ? JSON.parse(updatedBiz.knowledge_base || '[]') : (updatedBiz.knowledge_base || []);
+    renderKbItems();
+  } catch (err) {
+    showToast('خطأ في قراءة الموقع: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-magic"></i> قراءة وتدريب الـ AI';
+  }
 }
 
 // =================== INTEGRATIONS ===================

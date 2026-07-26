@@ -115,6 +115,37 @@ router.delete('/businesses/:id', async (req, res) => {
   }
 });
 
+// ---- SCRAPE WEBSITE FOR BUSINESS ----
+router.post('/businesses/:id/scrape', async (req, res) => {
+  try {
+    const { websiteUrl } = req.body;
+    if (!websiteUrl) return res.status(400).json({ error: 'websiteUrl is required' });
+
+    const b = await businesses.getById(req.params.id);
+    if (!b) return res.status(404).json({ error: 'Business not found' });
+
+    const { scrapeWebsite } = require('../utils/scraper');
+    const scrapedData = await scrapeWebsite(websiteUrl);
+
+    let existingKb = [];
+    try {
+      existingKb = typeof b.knowledge_base === 'string' ? JSON.parse(b.knowledge_base || '[]') : (b.knowledge_base || []);
+    } catch (e) {}
+
+    const newKb = [...existingKb, ...scrapedData.kbItems];
+    const updated = await businesses.update(req.params.id, {
+      description: scrapedData.summary || b.description,
+      description_ar: scrapedData.summary || b.description_ar,
+      knowledge_base: JSON.stringify(newKb)
+    });
+
+    res.json({ success: true, count: scrapedData.kbItems.length, business: updated });
+  } catch (err) {
+    console.error('Scrape error:', err);
+    res.status(500).json({ error: 'Scraping failed: ' + err.message });
+  }
+});
+
 router.get('/businesses/:id/stats', async (req, res) => {
   try {
     res.json(await businesses.getStats(req.params.id));
