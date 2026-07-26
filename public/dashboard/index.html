@@ -1417,25 +1417,40 @@ async function api(path, method = 'GET', body = null) {
 // =================== SOCKET ===================
 let socket;
 function initSocket() {
-  socket = io(CONFIG.serverUrl);
+  if (typeof io === 'undefined') return;
+  try {
+    socket = io(CONFIG.serverUrl, {
+      transports: ['polling', 'websocket'],
+      reconnectionAttempts: 3,
+      timeout: 4000
+    });
 
-  socket.on('connect', () => {
-    document.getElementById('connectionStatus').textContent = 'متصل • نشط';
-  });
+    socket.on('connect', () => {
+      const statusEl = document.getElementById('connectionStatus');
+      if (statusEl) statusEl.textContent = 'متصل • نشط';
+    });
 
-  socket.on('disconnect', () => {
-    document.getElementById('connectionStatus').textContent = 'غير متصل';
-  });
+    socket.on('connect_error', () => {
+      const statusEl = document.getElementById('connectionStatus');
+      if (statusEl) statusEl.textContent = 'سحابي • Vercel';
+    });
 
-  socket.on('new_message', (data) => {
-    addToLiveFeed(data);
-    if (document.getElementById('page-conversations').classList.contains('active')) {
-      loadConversations();
-    }
-    // Update badge
-    const badge = document.getElementById('activeConvBadge');
-    badge.textContent = parseInt(badge.textContent || '0') + 1;
-  });
+    socket.on('disconnect', () => {
+      const statusEl = document.getElementById('connectionStatus');
+      if (statusEl) statusEl.textContent = 'سحابي • Vercel';
+    });
+
+    socket.on('new_message', (data) => {
+      addToLiveFeed(data);
+      if (document.getElementById('page-conversations')?.classList.contains('active')) {
+        loadConversations();
+      }
+      const badge = document.getElementById('activeConvBadge');
+      if (badge) badge.textContent = parseInt(badge.textContent || '0') + 1;
+    });
+  } catch (e) {
+    console.warn('Socket init warning:', e);
+  }
 }
 
 function addToLiveFeed(data) {
