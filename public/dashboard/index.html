@@ -1,0 +1,2334 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Agent Platform - لوحة التحكم</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #111118;
+      --bg-card: #16161f;
+      --bg-card-hover: #1d1d2a;
+      --border: rgba(255,255,255,0.07);
+      --border-active: rgba(108, 99, 255, 0.5);
+      --text-primary: #f0f0f8;
+      --text-secondary: #8888aa;
+      --text-muted: #5555777;
+      --accent: #6C63FF;
+      --accent-hover: #7c74ff;
+      --accent-glow: rgba(108, 99, 255, 0.3);
+      --teal: #4ECDC4;
+      --green: #00E676;
+      --orange: #FF9800;
+      --red: #FF4444;
+      --gradient: linear-gradient(135deg, #6C63FF 0%, #4ECDC4 100%);
+      --sidebar-width: 260px;
+      --header-height: 64px;
+      --radius: 14px;
+      --radius-sm: 8px;
+      --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Cairo', 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* =================== SIDEBAR =================== */
+    .sidebar {
+      position: fixed;
+      right: 0;
+      top: 0;
+      width: var(--sidebar-width);
+      height: 100vh;
+      background: var(--bg-secondary);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-logo {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--gradient);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+
+    .logo-text h2 {
+      font-size: 14px;
+      font-weight: 700;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo-text span {
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 16px 0;
+      overflow-y: auto;
+    }
+
+    .nav-section {
+      margin-bottom: 8px;
+    }
+
+    .nav-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 8px 20px 4px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 20px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 14px;
+      font-weight: 500;
+      border-right: 3px solid transparent;
+      margin: 2px 0;
+    }
+
+    .nav-item:hover {
+      color: var(--text-primary);
+      background: rgba(108, 99, 255, 0.08);
+    }
+
+    .nav-item.active {
+      color: var(--accent);
+      background: rgba(108, 99, 255, 0.12);
+      border-right-color: var(--accent);
+    }
+
+    .nav-item i {
+      width: 20px;
+      text-align: center;
+      font-size: 15px;
+    }
+
+    .nav-badge {
+      margin-right: auto;
+      background: var(--accent);
+      color: white;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: rgba(0, 230, 118, 0.05);
+      border: 1px solid rgba(0, 230, 118, 0.15);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      color: var(--green);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse-green 2s infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse-green {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(0, 230, 118, 0); }
+    }
+
+    /* =================== MAIN CONTENT =================== */
+    .main {
+      margin-right: var(--sidebar-width);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* =================== HEADER =================== */
+    .header {
+      height: var(--header-height);
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .header-title h1 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .header-title p {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      font-family: inherit;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--gradient);
+      color: white;
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.06);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.1);
+      color: var(--text-primary);
+    }
+
+    .btn-danger {
+      background: rgba(255, 68, 68, 0.1);
+      color: var(--red);
+      border: 1px solid rgba(255, 68, 68, 0.2);
+    }
+
+    .btn-danger:hover {
+      background: rgba(255, 68, 68, 0.2);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      justify-content: center;
+      background: rgba(255,255,255,0.06);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .btn-icon:hover {
+      background: rgba(255,255,255,0.1);
+      color: var(--text-primary);
+    }
+
+    /* =================== CONTENT =================== */
+    .content {
+      flex: 1;
+      padding: 28px;
+    }
+
+    /* =================== PAGES =================== */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* =================== STATS CARDS =================== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+      border-color: var(--border-active);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: var(--gradient);
+      opacity: 0.6;
+    }
+
+    .stat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      margin-bottom: 14px;
+    }
+
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-primary);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .stat-change {
+      font-size: 11px;
+      margin-top: 8px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .stat-change.up {
+      background: rgba(0, 230, 118, 0.1);
+      color: var(--green);
+    }
+
+    /* =================== CARDS =================== */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .card-title i {
+      color: var(--accent);
+    }
+
+    .card-body {
+      padding: 22px;
+    }
+
+    /* =================== BUSINESS GRID =================== */
+    .businesses-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+
+    .business-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .business-card:hover {
+      border-color: var(--border-active);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(108, 99, 255, 0.15);
+    }
+
+    .business-card-accent {
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      height: 3px;
+    }
+
+    .business-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .business-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .business-info h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 3px;
+    }
+
+    .business-info p {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .business-badge {
+      margin-right: auto;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-active {
+      background: rgba(0, 230, 118, 0.1);
+      color: var(--green);
+      border: 1px solid rgba(0, 230, 118, 0.2);
+    }
+
+    .badge-inactive {
+      background: rgba(255, 68, 68, 0.1);
+      color: var(--red);
+      border: 1px solid rgba(255, 68, 68, 0.2);
+    }
+
+    .business-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .bs-stat {
+      text-align: center;
+      padding: 10px;
+      background: rgba(255,255,255,0.03);
+      border-radius: var(--radius-sm);
+    }
+
+    .bs-stat-val {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    .bs-stat-lbl {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .business-channels {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .channel-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid;
+    }
+
+    .channel-widget { color: var(--accent); border-color: rgba(108,99,255,0.3); background: rgba(108,99,255,0.08); }
+    .channel-whatsapp { color: #25D366; border-color: rgba(37,211,102,0.3); background: rgba(37,211,102,0.08); }
+    .channel-facebook { color: #1877F2; border-color: rgba(24,119,242,0.3); background: rgba(24,119,242,0.08); }
+    .channel-instagram { color: #E1306C; border-color: rgba(225,48,108,0.3); background: rgba(225,48,108,0.08); }
+    .channel-tiktok { color: #FE2C55; border-color: rgba(254,44,85,0.3); background: rgba(254,44,85,0.08); }
+    .channel-telegram { color: #229ED9; border-color: rgba(34,158,217,0.3); background: rgba(34,158,217,0.08); }
+    .channel-twitter { color: #1DA1F2; border-color: rgba(29,161,242,0.3); background: rgba(29,161,242,0.08); }
+
+    /* =================== ADD BUSINESS CARD =================== */
+    .add-business-card {
+      background: rgba(108, 99, 255, 0.04);
+      border: 2px dashed rgba(108, 99, 255, 0.3);
+      border-radius: var(--radius);
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      min-height: 200px;
+    }
+
+    .add-business-card:hover {
+      border-color: var(--accent);
+      background: rgba(108, 99, 255, 0.08);
+      transform: translateY(-2px);
+    }
+
+    .add-business-card i {
+      font-size: 32px;
+      color: var(--accent);
+    }
+
+    .add-business-card span {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    /* =================== CONVERSATIONS =================== */
+    .conv-layout {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 0;
+      height: calc(100vh - var(--header-height) - 56px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .conv-list {
+      background: var(--bg-card);
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+    }
+
+    .conv-list-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      background: var(--bg-card);
+      z-index: 10;
+    }
+
+    .search-input {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      padding: 8px 12px;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+      direction: rtl;
+    }
+
+    .search-input:focus {
+      border-color: var(--accent);
+    }
+
+    .conv-item {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .conv-item:hover { background: var(--bg-card-hover); }
+    .conv-item.active { background: rgba(108, 99, 255, 0.1); border-right: 3px solid var(--accent); }
+
+    .conv-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .conv-info { flex: 1; min-width: 0; }
+    .conv-name { font-size: 13px; font-weight: 700; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .conv-preview { font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .conv-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+    .conv-time { font-size: 10px; color: var(--text-muted); }
+    .conv-unread { background: var(--accent); color: white; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; }
+
+    .conv-viewer {
+      background: var(--bg-primary);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .conv-viewer-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-card);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .messages-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .message-bubble {
+      max-width: 70%;
+      padding: 10px 14px;
+      border-radius: 16px;
+      font-size: 13px;
+      line-height: 1.5;
+      position: relative;
+    }
+
+    .message-user {
+      background: var(--accent);
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message-assistant {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+
+    .message-time {
+      font-size: 10px;
+      color: rgba(255,255,255,0.5);
+      margin-top: 4px;
+      text-align: left;
+    }
+
+    .empty-conv {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      color: var(--text-muted);
+    }
+
+    .empty-conv i { font-size: 48px; }
+    .empty-conv p { font-size: 14px; }
+
+    /* =================== MODAL =================== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 680px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+      animation: modal-in 0.3s ease;
+    }
+
+    @keyframes modal-in {
+      from { opacity: 0; transform: scale(0.95) translateY(20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-header {
+      padding: 22px 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title { font-size: 18px; font-weight: 700; }
+
+    .modal-close {
+      width: 32px; height: 32px;
+      background: rgba(255,255,255,0.06);
+      border: none; border-radius: 8px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      font-size: 16px;
+    }
+
+    .modal-close:hover { background: rgba(255,68,68,0.1); color: var(--red); }
+
+    .modal-body { padding: 24px; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* =================== FORM =================== */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-full { grid-column: 1 / -1; }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
+
+    .form-input, .form-select, .form-textarea {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      padding: 10px 14px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+      direction: rtl;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .form-textarea { resize: vertical; min-height: 100px; }
+    .form-select option { background: var(--bg-secondary); }
+
+    .color-row { display: flex; align-items: center; gap: 10px; }
+    .color-input { width: 44px; height: 36px; border-radius: var(--radius-sm); border: 1px solid var(--border); cursor: pointer; padding: 2px; background: transparent; }
+
+    /* =================== KB EDITOR =================== */
+    .kb-item {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin-bottom: 10px;
+      position: relative;
+    }
+
+    .kb-remove {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255,68,68,0.1);
+      border: none;
+      color: var(--red);
+      width: 24px; height: 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+
+    .kb-remove:hover { background: rgba(255,68,68,0.2); }
+
+    /* =================== INTEGRATION SETUP =================== */
+    .integration-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: all 0.3s;
+    }
+
+    .integration-card.connected {
+      border-color: rgba(0, 230, 118, 0.3);
+      background: rgba(0, 230, 118, 0.04);
+    }
+
+    .integration-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .integration-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .integration-info h3 { font-size: 15px; font-weight: 700; }
+    .integration-info p { font-size: 12px; color: var(--text-secondary); }
+
+    .integration-status {
+      margin-right: auto;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+    }
+
+    .copy-code {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      color: var(--teal);
+      word-break: break-all;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .copy-code:hover { border-color: var(--accent); }
+    .copy-code .copy-btn {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+    }
+
+    /* =================== LIVE FEED =================== */
+    .live-feed {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .feed-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      animation: feed-in 0.4s ease;
+    }
+
+    @keyframes feed-in {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .feed-channel {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .feed-content { flex: 1; min-width: 0; }
+    .feed-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .feed-from { font-size: 13px; font-weight: 600; }
+    .feed-time { font-size: 11px; color: var(--text-muted); }
+    .feed-message { font-size: 12px; color: var(--text-secondary); }
+
+    /* =================== TABS =================== */
+    .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--bg-card); padding: 6px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+    .tab { flex: 1; padding: 8px; text-align: center; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; }
+    .tab.active { background: var(--accent); color: white; }
+
+    /* =================== SCROLLBAR =================== */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+    /* =================== TOAST =================== */
+    .toast-container { position: fixed; top: 20px; left: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; }
+
+    .toast {
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toast-in 0.3s ease;
+      min-width: 280px;
+      box-shadow: var(--shadow);
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .toast-success { background: rgba(0, 230, 118, 0.15); border: 1px solid rgba(0, 230, 118, 0.3); color: var(--green); }
+    .toast-error { background: rgba(255, 68, 68, 0.15); border: 1px solid rgba(255, 68, 68, 0.3); color: var(--red); }
+    .toast-info { background: rgba(108, 99, 255, 0.15); border: 1px solid rgba(108, 99, 255, 0.3); color: var(--accent); }
+
+    /* =================== LOADER =================== */
+    .loader {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s infinite;
+      border-radius: var(--radius-sm);
+    }
+
+    @keyframes skeleton-loading { to { background-position: -200% 0; } }
+
+    /* =================== ANALYTICS =================== */
+    .chart-bar-container { display: flex; flex-direction: column; gap: 10px; }
+    .chart-bar-item { display: flex; align-items: center; gap: 12px; }
+    .chart-bar-label { width: 100px; font-size: 12px; color: var(--text-secondary); text-align: right; flex-shrink: 0; }
+    .chart-bar-track { flex: 1; height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+    .chart-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; }
+    .chart-bar-val { width: 40px; font-size: 12px; font-weight: 700; color: var(--text-primary); text-align: left; }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(100%); }
+      .sidebar.open { transform: translateX(0); }
+      .main { margin-right: 0; }
+      .form-grid { grid-template-columns: 1fr; }
+      .conv-layout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">🤖</div>
+    <div class="logo-text">
+      <h2>AI Agent Pro</h2>
+      <span>منصة الذكاء الاصطناعي</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section">
+      <div class="nav-label">الرئيسية</div>
+      <div class="nav-item active" data-page="overview">
+        <i class="fas fa-chart-pie"></i>
+        <span>نظرة عامة</span>
+      </div>
+      <div class="nav-item" data-page="conversations">
+        <i class="fas fa-comments"></i>
+        <span>المحادثات</span>
+        <span class="nav-badge" id="activeConvBadge">0</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">الأعمال</div>
+      <div class="nav-item" data-page="businesses">
+        <i class="fas fa-building"></i>
+        <span>الأنشطة التجارية</span>
+      </div>
+      <div class="nav-item" data-page="integrations">
+        <i class="fas fa-plug"></i>
+        <span>التكاملات</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">الإعدادات</div>
+      <div class="nav-item" data-page="settings">
+        <i class="fas fa-cog"></i>
+        <span>الإعدادات</span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="status-indicator">
+      <div class="status-dot"></div>
+      <span id="connectionStatus">متصل • نشط</span>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-title">
+      <h1 id="pageTitle">نظرة عامة</h1>
+      <p id="pageSubtitle">لوحة تحكم AI Agent Platform</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="refreshData()" title="تحديث">
+        <i class="fas fa-sync-alt"></i>
+      </button>
+      <button class="btn btn-primary" onclick="openAddBusiness()">
+        <i class="fas fa-plus"></i>
+        نشاط جديد
+      </button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ========== OVERVIEW PAGE ========== -->
+    <div class="page active" id="page-overview">
+      <!-- Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(108,99,255,0.15); color:#6C63FF;">
+            <i class="fas fa-building"></i>
+          </div>
+          <div class="stat-value" id="stat-businesses">-</div>
+          <div class="stat-label">الأنشطة التجارية</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(78,205,196,0.15); color:#4ECDC4;">
+            <i class="fas fa-comments"></i>
+          </div>
+          <div class="stat-value" id="stat-conversations">-</div>
+          <div class="stat-label">إجمالي المحادثات</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(0,230,118,0.15); color:#00E676;">
+            <i class="fas fa-message"></i>
+          </div>
+          <div class="stat-value" id="stat-messages">-</div>
+          <div class="stat-label">رسائل المستخدمين</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:rgba(255,152,0,0.15); color:#FF9800;">
+            <i class="fas fa-calendar-day"></i>
+          </div>
+          <div class="stat-value" id="stat-today">-</div>
+          <div class="stat-label">محادثات اليوم</div>
+          <div class="stat-change up"><i class="fas fa-arrow-up"></i> نشط الآن</div>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 380px; gap: 20px;">
+        <!-- Live Feed -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <i class="fas fa-bolt"></i>
+              النشاط الفوري
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--green);">
+              <div class="status-dot" style="width:6px;height:6px;"></div>
+              مباشر
+            </div>
+          </div>
+          <div class="live-feed" id="liveFeed">
+            <div style="padding:40px; text-align:center; color:var(--text-muted);">
+              <i class="fas fa-satellite-dish" style="font-size:32px;margin-bottom:12px;display:block;"></i>
+              في انتظار الرسائل الواردة...
+            </div>
+          </div>
+        </div>
+
+        <!-- Channel Distribution -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><i class="fas fa-chart-bar"></i> توزيع القنوات</div>
+          </div>
+          <div class="card-body">
+            <div class="chart-bar-container" id="channelChart">
+              <div class="skeleton" style="height:30px;"></div>
+              <div class="skeleton" style="height:30px;"></div>
+              <div class="skeleton" style="height:30px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== BUSINESSES PAGE ========== -->
+    <div class="page" id="page-businesses">
+      <div class="businesses-grid" id="businessesGrid">
+        <div class="add-business-card" onclick="openAddBusiness()">
+          <i class="fas fa-plus-circle"></i>
+          <span>إضافة نشاط تجاري جديد</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== CONVERSATIONS PAGE ========== -->
+    <div class="page" id="page-conversations">
+      <div class="conv-layout">
+        <div class="conv-list">
+          <div class="conv-list-header">
+            <input class="search-input" placeholder="🔍 بحث في المحادثات..." id="convSearch">
+          </div>
+          <div id="convListItems">
+            <div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;">
+              <i class="fas fa-comments" style="font-size:28px;display:block;margin-bottom:10px;"></i>
+              لا توجد محادثات بعد
+            </div>
+          </div>
+        </div>
+        <div class="conv-viewer">
+          <div class="empty-conv">
+            <i class="fas fa-comment-dots"></i>
+            <p>اختر محادثة لعرضها</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== INTEGRATIONS PAGE ========== -->
+    <div class="page" id="page-integrations">
+      <div style="margin-bottom:20px;">
+        <p style="color:var(--text-secondary);font-size:14px;">اختر النشاط التجاري لعرض وإدارة تكاملاته:</p>
+        <select class="form-select" id="intBusinessSelect" style="max-width:300px;margin-top:8px;" onchange="loadIntegrations()">
+          <option value="">-- اختر نشاط تجاري --</option>
+        </select>
+      </div>
+      <div id="integrationsContent">
+        <div style="text-align:center;padding:60px;color:var(--text-muted);">
+          <i class="fas fa-plug" style="font-size:40px;margin-bottom:12px;display:block;"></i>
+          <p>اختر نشاطاً تجارياً لعرض التكاملات</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SETTINGS PAGE ========== -->
+    <div class="page" id="page-settings">
+      <div class="card" style="max-width:600px;">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-key"></i> إعدادات API</div>
+        </div>
+        <div class="card-body">
+          <div class="form-group" style="margin-bottom:16px;">
+            <label class="form-label">رمز الإدارة (Admin Token)</label>
+            <input type="password" class="form-input" id="adminTokenInput" placeholder="أدخل رمز الإدارة للوصول">
+            <small style="color:var(--text-muted);font-size:11px;">يُستخدم للتحقق من صلاحية الوصول للوحة التحكم</small>
+          </div>
+          <div class="form-group" style="margin-bottom:16px;">
+            <label class="form-label">عنوان السيرفر</label>
+            <input type="text" class="form-input" id="serverUrlInput" value="" placeholder="http://localhost:3000">
+          </div>
+          <button class="btn btn-primary" onclick="saveSettings()">
+            <i class="fas fa-save"></i> حفظ الإعدادات
+          </button>
+        </div>
+      </div>
+
+      <div class="card" style="max-width:600px;margin-top:20px;">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-info-circle"></i> معلومات النظام</div>
+        </div>
+        <div class="card-body">
+          <div id="systemInfo" style="font-size:13px;color:var(--text-secondary);">جاري التحميل...</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- .content -->
+</main>
+
+<!-- =================== BUSINESS MODAL =================== -->
+<div class="modal-overlay" id="businessModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="businessModalTitle">إضافة نشاط تجاري جديد</div>
+      <button class="modal-close" onclick="closeModal('businessModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('basic')">المعلومات الأساسية</div>
+        <div class="tab" onclick="switchTab('agent')">شخصية المساعد</div>
+        <div class="tab" onclick="switchTab('knowledge')">قاعدة المعرفة</div>
+      </div>
+
+      <!-- TAB: Basic -->
+      <div id="tab-basic">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">اسم النشاط (عربي) *</label>
+            <input class="form-input" id="biz-name-ar" placeholder="مثال: متجر الأزياء الراقية">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Business Name (English)</label>
+            <input class="form-input" id="biz-name" placeholder="e.g., Elite Fashion Store" dir="ltr">
+          </div>
+          <div class="form-group form-full">
+            <label class="form-label">وصف النشاط (عربي)</label>
+            <textarea class="form-textarea" id="biz-desc-ar" placeholder="وصف مختصر عن نشاطك التجاري، المنتجات، الخدمات..."></textarea>
+          </div>
+          <div class="form-group form-full">
+            <label class="form-label">Business Description (English)</label>
+            <textarea class="form-textarea" id="biz-desc" placeholder="Brief description of your business..." dir="ltr"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">نوع الصناعة</label>
+            <select class="form-select" id="biz-industry">
+              <option value="general">عام</option>
+              <option value="retail">بيع بالتجزئة</option>
+              <option value="restaurant">مطاعم وأغذية</option>
+              <option value="healthcare">صحة وطب</option>
+              <option value="education">تعليم</option>
+              <option value="technology">تقنية</option>
+              <option value="realestate">عقارات</option>
+              <option value="travel">سياحة وسفر</option>
+              <option value="finance">مالية وبنوك</option>
+              <option value="beauty">جمال وعناية</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">اللغة الافتراضية</label>
+            <select class="form-select" id="biz-language">
+              <option value="auto">تلقائي (حسب المستخدم)</option>
+              <option value="ar">عربي</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">اللون الرئيسي</label>
+            <div class="color-row">
+              <input type="color" class="color-input" id="biz-color" value="#6C63FF">
+              <input class="form-input" id="biz-color-text" value="#6C63FF" style="direction:ltr;">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">البريد الإلكتروني للتصعيد</label>
+            <input class="form-input" id="biz-email" placeholder="support@business.com" dir="ltr" type="email">
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Agent Personality -->
+      <div id="tab-agent" style="display:none;">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">اسم المساعد (عربي)</label>
+            <input class="form-input" id="biz-agent-name-ar" placeholder="مثال: سارة، ليلى، أحمد">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Agent Name (English)</label>
+            <input class="form-input" id="biz-agent-name" placeholder="e.g., Aria, Alex, Max" dir="ltr">
+          </div>
+          <div class="form-group form-full">
+            <label class="form-label">رسالة الترحيب (عربي)</label>
+            <textarea class="form-textarea" id="biz-welcome-ar" placeholder="أهلاً! أنا سارة مساعدتك. كيف يمكنني مساعدتك اليوم؟ 😊"></textarea>
+          </div>
+          <div class="form-group form-full">
+            <label class="form-label">Welcome Message (English)</label>
+            <textarea class="form-textarea" id="biz-welcome" dir="ltr" placeholder="Hello! I'm Aria, your virtual assistant. How can I help you today? 😊"></textarea>
+          </div>
+          <div class="form-group form-full">
+            <label class="form-label">تعليمات إضافية للمساعد (اختياري)</label>
+            <textarea class="form-textarea" id="biz-prompt" placeholder="مثال: تحدث دائماً بشكل رسمي. لا تذكر أسعار المنافسين. وجّه العملاء لزيارة الفرع..." style="min-height:120px;"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: Knowledge Base -->
+      <div id="tab-knowledge" style="display:none;">
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">
+          أضف الأسئلة الشائعة والمعلومات التي تريد المساعد أن يعرفها بدقة.
+        </p>
+        <div id="kbItems"></div>
+        <button class="btn btn-secondary" onclick="addKbItem()" style="width:100%;margin-top:8px;">
+          <i class="fas fa-plus"></i> إضافة سؤال وجواب
+        </button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('businessModal')">إلغاء</button>
+      <button class="btn btn-primary" id="saveBizBtn" onclick="saveBusiness()">
+        <i class="fas fa-save"></i> حفظ النشاط
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- =================== INTEGRATION MODAL =================== -->
+<div class="modal-overlay" id="integrationModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="intModalTitle">إعداد التكامل</div>
+      <button class="modal-close" onclick="closeModal('integrationModal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="modal-body" id="intModalBody">
+    </div>
+  </div>
+</div>
+
+<script>
+// =================== CONFIG ===================
+let CONFIG = {
+  serverUrl: localStorage.getItem('serverUrl') || window.location.origin,
+  adminToken: localStorage.getItem('adminToken') || 'admin123',
+};
+
+let state = {
+  businesses: [],
+  conversations: [],
+  selectedConv: null,
+  currentEditBiz: null,
+  kbItems: [],
+};
+
+// =================== API ===================
+async function api(path, method = 'GET', body = null) {
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Token': CONFIG.adminToken,
+    },
+  };
+  if (body) opts.body = JSON.stringify(body);
+
+  const res = await fetch(CONFIG.serverUrl + path, opts);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(err.error || 'Request failed');
+  }
+  return res.json();
+}
+
+// =================== SOCKET ===================
+let socket;
+function initSocket() {
+  socket = io(CONFIG.serverUrl);
+
+  socket.on('connect', () => {
+    document.getElementById('connectionStatus').textContent = 'متصل • نشط';
+  });
+
+  socket.on('disconnect', () => {
+    document.getElementById('connectionStatus').textContent = 'غير متصل';
+  });
+
+  socket.on('new_message', (data) => {
+    addToLiveFeed(data);
+    if (document.getElementById('page-conversations').classList.contains('active')) {
+      loadConversations();
+    }
+    // Update badge
+    const badge = document.getElementById('activeConvBadge');
+    badge.textContent = parseInt(badge.textContent || '0') + 1;
+  });
+}
+
+function addToLiveFeed(data) {
+  const feed = document.getElementById('liveFeed');
+  const channelIcons = {
+    widget: { icon: '💻', color: '#6C63FF', bg: 'rgba(108,99,255,0.15)' },
+    whatsapp: { icon: '📱', color: '#25D366', bg: 'rgba(37,211,102,0.15)' },
+    facebook: { icon: '📘', color: '#1877F2', bg: 'rgba(24,119,242,0.15)' },
+    instagram: { icon: '📸', color: '#E1306C', bg: 'rgba(225,48,108,0.15)' },
+    tiktok: { icon: '🎵', color: '#FE2C55', bg: 'rgba(254,44,85,0.15)' },
+    telegram: { icon: '✈️', color: '#229ED9', bg: 'rgba(34,158,217,0.15)' },
+    twitter: { icon: '🐦', color: '#1DA1F2', bg: 'rgba(29,161,242,0.15)' },
+  };
+  const ch = channelIcons[data.channel] || channelIcons.widget;
+  const time = new Date().toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' });
+
+  // Remove empty state
+  if (feed.querySelector('div[style]')) feed.innerHTML = '';
+
+  const item = document.createElement('div');
+  item.className = 'feed-item';
+  item.innerHTML = `
+    <div class="feed-channel" style="background:${ch.bg};color:${ch.color};">${ch.icon}</div>
+    <div class="feed-content">
+      <div class="feed-header">
+        <span class="feed-from">${escHtml(data.from || 'عميل')}</span>
+        <span class="feed-time">${time}</span>
+      </div>
+      <div class="feed-message">${escHtml(data.message?.substring(0, 80) || '')}${(data.message?.length > 80) ? '...' : ''}</div>
+    </div>
+  `;
+  feed.insertBefore(item, feed.firstChild);
+  if (feed.children.length > 20) feed.removeChild(feed.lastChild);
+}
+
+// =================== NAVIGATION ===================
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const page = item.dataset.page;
+    navigateTo(page);
+  });
+});
+
+const pageTitles = {
+  overview: ['نظرة عامة', 'لوحة تحكم AI Agent Platform'],
+  businesses: ['الأنشطة التجارية', 'إدارة وتكوين أنشطتك التجارية'],
+  conversations: ['المحادثات', 'مراقبة وإدارة المحادثات'],
+  integrations: ['التكاملات', 'ربط القنوات والمنصات'],
+  settings: ['الإعدادات', 'إعدادات النظام والـ API'],
+};
+
+function navigateTo(page) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.toggle('active', i.dataset.page === page));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page)?.classList.add('active');
+
+  const [title, sub] = pageTitles[page] || ['', ''];
+  document.getElementById('pageTitle').textContent = title;
+  document.getElementById('pageSubtitle').textContent = sub;
+
+  if (page === 'overview') loadOverview();
+  if (page === 'businesses') loadBusinesses();
+  if (page === 'conversations') loadConversations();
+  if (page === 'integrations') loadIntBusinesses();
+  if (page === 'settings') loadSettings();
+}
+
+// =================== OVERVIEW ===================
+async function loadOverview() {
+  try {
+    const data = await api('/api/admin/overview');
+    document.getElementById('stat-businesses').textContent = data.totalBusinesses ?? 0;
+    document.getElementById('stat-conversations').textContent = data.totalConversations ?? 0;
+    document.getElementById('stat-messages').textContent = data.totalMessages ?? 0;
+    document.getElementById('stat-today').textContent = data.activeToday ?? 0;
+    document.getElementById('activeConvBadge').textContent = data.totalConversations ?? 0;
+
+    // Channel chart
+    const channels = { widget: 0, whatsapp: 0, facebook: 0, instagram: 0 };
+    (data.byChannel || []).forEach(c => { channels[c.channel] = c.count; });
+    const max = Math.max(...Object.values(channels), 1);
+    const channelNames = { widget: '🌐 الموقع', whatsapp: '📱 واتساب', facebook: '📘 فيسبوك', instagram: '📸 إنستغرام' };
+    const colors = { widget: '#6C63FF', whatsapp: '#25D366', facebook: '#1877F2', instagram: '#E1306C' };
+
+    document.getElementById('channelChart').innerHTML = Object.entries(channels).map(([ch, val]) => `
+      <div class="chart-bar-item">
+        <div class="chart-bar-label">${channelNames[ch]}</div>
+        <div class="chart-bar-track">
+          <div class="chart-bar-fill" style="width:${(val/max*100)}%;background:${colors[ch]};"></div>
+        </div>
+        <div class="chart-bar-val">${val}</div>
+      </div>
+    `).join('');
+
+    // Load recent activity into feed
+    (data.recentActivity || []).slice(0, 5).forEach(a => {
+      addToLiveFeed({ channel: a.channel, from: a.business_name, message: a.last_message || 'محادثة جديدة' });
+    });
+  } catch (err) {
+    showToast('خطأ في تحميل البيانات: ' + err.message, 'error');
+  }
+}
+
+// =================== BUSINESSES ===================
+async function loadBusinesses() {
+  try {
+    const bizs = await api('/api/admin/businesses');
+    state.businesses = bizs;
+    renderBusinesses(bizs);
+  } catch (err) {
+    showToast('خطأ: ' + err.message, 'error');
+  }
+}
+
+function renderBusinesses(bizs) {
+  const grid = document.getElementById('businessesGrid');
+  const industryEmojis = {
+    general: '🏢', retail: '🛍️', restaurant: '🍽️', healthcare: '🏥',
+    education: '📚', technology: '💻', realestate: '🏠', travel: '✈️',
+    finance: '💰', beauty: '💄'
+  };
+
+  const cards = bizs.map(b => {
+    const emoji = industryEmojis[b.industry] || '🏢';
+    const isActive = b.is_active === 1;
+    return `
+      <div class="business-card" onclick="editBusiness('${b.id}')">
+        <div class="business-card-accent" style="background:linear-gradient(90deg, ${b.primary_color}, ${b.secondary_color || '#4ECDC4'});"></div>
+        <div class="business-header">
+          <div class="business-avatar" style="background:${b.primary_color}22; color:${b.primary_color};">${emoji}</div>
+          <div class="business-info">
+            <h3>${escHtml(b.name_ar || b.name)}</h3>
+            <p>${escHtml(b.name)}</p>
+          </div>
+          <span class="business-badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? '● نشط' : '● متوقف'}</span>
+        </div>
+        <div class="business-channels">
+          <span class="channel-badge channel-widget">💻 ويدجت</span>
+          ${b.industry ? `<span class="business-badge" style="background:${b.primary_color}15;color:${b.primary_color};border:1px solid ${b.primary_color}30;font-size:11px;padding:3px 10px;border-radius:20px;">${escHtml(b.industry)}</span>` : ''}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button class="btn btn-sm btn-secondary" style="flex:1;" onclick="event.stopPropagation();openIntegrations('${b.id}')">
+            <i class="fas fa-plug"></i> التكاملات
+          </button>
+          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteBusiness('${b.id}','${escHtml(b.name)}')">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  grid.innerHTML = `
+    <div class="add-business-card" onclick="openAddBusiness()">
+      <i class="fas fa-plus-circle"></i>
+      <span>إضافة نشاط تجاري</span>
+    </div>
+    ${cards}
+  `;
+}
+
+// =================== CONVERSATIONS ===================
+async function loadConversations() {
+  try {
+    const convs = await api('/api/admin/conversations?limit=100');
+    state.conversations = convs;
+    renderConvList(convs);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function renderConvList(convs) {
+  const container = document.getElementById('convListItems');
+  if (!convs.length) {
+    container.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;"><i class="fas fa-comments" style="font-size:28px;display:block;margin-bottom:10px;"></i>لا توجد محادثات بعد</div>';
+    return;
+  }
+
+  const channelColors = { widget: '#6C63FF', whatsapp: '#25D366', facebook: '#1877F2', instagram: '#E1306C' };
+  const channelIcons = { widget: '💻', whatsapp: '📱', facebook: '📘', instagram: '📸' };
+
+  container.innerHTML = convs.map(c => `
+    <div class="conv-item ${state.selectedConv?.id === c.id ? 'active' : ''}" onclick="selectConversation('${c.id}')">
+      <div class="conv-avatar" style="background:${channelColors[c.channel]}22; color:${channelColors[c.channel]}; font-size:18px;">
+        ${channelIcons[c.channel] || '💬'}
+      </div>
+      <div class="conv-info">
+        <div class="conv-meta">
+          <div class="conv-name">${escHtml(c.customer_name || c.channel_user_id.slice(0,12))}</div>
+          <div class="conv-time">${formatTime(c.last_message_at)}</div>
+        </div>
+        <div class="conv-preview">${escHtml(c.last_message || 'محادثة جديدة')}</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+          <span style="font-size:10px;color:${channelColors[c.channel]};font-weight:600;">${c.channel}</span>
+          <span style="font-size:10px;color:var(--text-muted);">• ${escHtml(c.business_name || '')}</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function selectConversation(id) {
+  state.selectedConv = state.conversations.find(c => c.id === id);
+  renderConvList(state.conversations);
+
+  try {
+    const data = await api(`/api/admin/conversations/${id}/messages`);
+    const viewer = document.querySelector('.conv-viewer');
+
+    const channelColors = { widget: '#6C63FF', whatsapp: '#25D366', facebook: '#1877F2', instagram: '#E1306C' };
+    const conv = data.conversation;
+
+    viewer.innerHTML = `
+      <div class="conv-viewer-header">
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(108,99,255,0.15);display:flex;align-items:center;justify-content:center;font-size:16px;">👤</div>
+        <div>
+          <div style="font-size:14px;font-weight:700;">${escHtml(state.selectedConv?.customer_name || 'عميل')}</div>
+          <div style="font-size:12px;color:var(--text-secondary);">${conv.channel} • ${conv.language || 'auto'}</div>
+        </div>
+        <div style="margin-right:auto;display:flex;gap:8px;">
+          <button class="btn btn-sm btn-secondary" onclick="updateConvStatus('${id}','resolved')"><i class="fas fa-check"></i> حل</button>
+          <button class="btn btn-sm btn-secondary" onclick="updateConvStatus('${id}','escalated')"><i class="fas fa-user"></i> تصعيد</button>
+        </div>
+      </div>
+      <div class="messages-area" id="messagesArea">
+        ${data.messages.map(m => `
+          <div style="display:flex;flex-direction:column;align-items:${m.role === 'user' ? 'flex-end' : 'flex-start'};">
+            <div class="message-bubble message-${m.role === 'user' ? 'user' : 'assistant'}">
+              ${escHtml(m.content)}
+            </div>
+            <div class="message-time" style="color:var(--text-muted);">${formatTime(m.created_at)}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    // Scroll to bottom
+    setTimeout(() => {
+      const area = document.getElementById('messagesArea');
+      if (area) area.scrollTop = area.scrollHeight;
+    }, 100);
+
+  } catch (err) {
+    showToast('خطأ في تحميل المحادثة', 'error');
+  }
+}
+
+async function updateConvStatus(id, status) {
+  try {
+    await api(`/api/admin/conversations/${id}/status`, 'PATCH', { status });
+    showToast(`تم تحديث الحالة إلى: ${status}`, 'success');
+  } catch (err) {
+    showToast('خطأ: ' + err.message, 'error');
+  }
+}
+
+// =================== ADD/EDIT BUSINESS ===================
+let currentTab = 'basic';
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tabs .tab').forEach((t, i) => {
+    const tabs = ['basic', 'agent', 'knowledge'];
+    t.classList.toggle('active', tabs[i] === tab);
+  });
+  ['tab-basic', 'tab-agent', 'tab-knowledge'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  document.getElementById('tab-' + tab).style.display = 'block';
+}
+
+function openAddBusiness() {
+  state.currentEditBiz = null;
+  state.kbItems = [];
+  document.getElementById('businessModalTitle').textContent = 'إضافة نشاط تجاري جديد';
+  clearBizForm();
+  switchTab('basic');
+  openModal('businessModal');
+}
+
+async function editBusiness(id) {
+  try {
+    const b = await api(`/api/admin/businesses/${id}`);
+    state.currentEditBiz = b;
+    document.getElementById('businessModalTitle').textContent = 'تعديل: ' + (b.name_ar || b.name);
+
+    document.getElementById('biz-name-ar').value = b.name_ar || '';
+    document.getElementById('biz-name').value = b.name || '';
+    document.getElementById('biz-desc-ar').value = b.description_ar || '';
+    document.getElementById('biz-desc').value = b.description || '';
+    document.getElementById('biz-industry').value = b.industry || 'general';
+    document.getElementById('biz-language').value = b.language || 'auto';
+    document.getElementById('biz-color').value = b.primary_color || '#6C63FF';
+    document.getElementById('biz-color-text').value = b.primary_color || '#6C63FF';
+    document.getElementById('biz-email').value = b.escalation_email || '';
+    document.getElementById('biz-agent-name-ar').value = b.agent_name_ar || '';
+    document.getElementById('biz-agent-name').value = b.agent_name || '';
+    document.getElementById('biz-welcome-ar').value = b.welcome_message_ar || '';
+    document.getElementById('biz-welcome').value = b.welcome_message || '';
+    document.getElementById('biz-prompt').value = b.system_prompt || '';
+
+    state.kbItems = JSON.parse(b.knowledge_base || '[]');
+    renderKbItems();
+    switchTab('basic');
+    openModal('businessModal');
+  } catch (err) {
+    showToast('خطأ في تحميل البيانات', 'error');
+  }
+}
+
+function clearBizForm() {
+  ['biz-name-ar','biz-name','biz-desc-ar','biz-desc','biz-email','biz-agent-name-ar','biz-agent-name','biz-welcome-ar','biz-welcome','biz-prompt'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('biz-industry').value = 'general';
+  document.getElementById('biz-language').value = 'auto';
+  document.getElementById('biz-color').value = '#6C63FF';
+  document.getElementById('biz-color-text').value = '#6C63FF';
+  state.kbItems = [];
+  renderKbItems();
+}
+
+async function saveBusiness() {
+  const name = document.getElementById('biz-name-ar').value || document.getElementById('biz-name').value;
+  if (!name.trim()) { showToast('يرجى إدخال اسم النشاط التجاري', 'error'); return; }
+
+  const btn = document.getElementById('saveBizBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> جاري الحفظ...';
+
+  const data = {
+    name: document.getElementById('biz-name').value || name,
+    name_ar: document.getElementById('biz-name-ar').value,
+    description: document.getElementById('biz-desc').value,
+    description_ar: document.getElementById('biz-desc-ar').value,
+    industry: document.getElementById('biz-industry').value,
+    language: document.getElementById('biz-language').value,
+    primary_color: document.getElementById('biz-color').value,
+    escalation_email: document.getElementById('biz-email').value,
+    agent_name: document.getElementById('biz-agent-name').value || 'Assistant',
+    agent_name_ar: document.getElementById('biz-agent-name-ar').value || 'المساعد',
+    welcome_message: document.getElementById('biz-welcome').value,
+    welcome_message_ar: document.getElementById('biz-welcome-ar').value,
+    system_prompt: document.getElementById('biz-prompt').value,
+    knowledge_base: state.kbItems,
+  };
+
+  try {
+    if (state.currentEditBiz) {
+      await api('/api/admin/businesses/' + state.currentEditBiz.id, 'PUT', data);
+      showToast('تم تحديث النشاط التجاري بنجاح ✅', 'success');
+    } else {
+      await api('/api/admin/businesses', 'POST', data);
+      showToast('تم إضافة النشاط التجاري بنجاح 🎉', 'success');
+    }
+    closeModal('businessModal');
+    loadBusinesses();
+    loadIntBusinesses();
+  } catch (err) {
+    showToast('خطأ: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-save"></i> حفظ النشاط';
+  }
+}
+
+async function deleteBusiness(id, name) {
+  if (!confirm(`هل تريد حذف "${name}"؟ هذا الإجراء لا يمكن التراجع عنه.`)) return;
+  try {
+    await api('/api/admin/businesses/' + id, 'DELETE');
+    showToast('تم حذف النشاط التجاري', 'success');
+    loadBusinesses();
+  } catch (err) {
+    showToast('خطأ في الحذف: ' + err.message, 'error');
+  }
+}
+
+// =================== KNOWLEDGE BASE ===================
+function addKbItem() {
+  state.kbItems.push({ question: '', answer: '' });
+  renderKbItems();
+}
+
+function removeKbItem(index) {
+  state.kbItems.splice(index, 1);
+  renderKbItems();
+}
+
+function renderKbItems() {
+  const container = document.getElementById('kbItems');
+  if (!state.kbItems.length) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">لا توجد أسئلة وأجوبة بعد. أضف أسئلة شائعة لتحسين دقة المساعد.</div>';
+    return;
+  }
+  container.innerHTML = state.kbItems.map((item, i) => `
+    <div class="kb-item">
+      <button class="kb-remove" onclick="removeKbItem(${i})"><i class="fas fa-times"></i></button>
+      <div class="form-group" style="margin-bottom:8px;">
+        <label class="form-label">السؤال</label>
+        <input class="form-input" value="${escHtml(item.question)}" onchange="state.kbItems[${i}].question=this.value" placeholder="ما هي ساعات العمل؟">
+      </div>
+      <div class="form-group">
+        <label class="form-label">الإجابة</label>
+        <textarea class="form-textarea" onchange="state.kbItems[${i}].answer=this.value" style="min-height:60px;" placeholder="نعمل من 9 صباحاً حتى 10 مساءً يومياً">${escHtml(item.answer)}</textarea>
+      </div>
+    </div>
+  `).join('');
+}
+
+// =================== INTEGRATIONS ===================
+async function loadIntBusinesses() {
+  try {
+    const bizs = await api('/api/admin/businesses');
+    state.businesses = bizs;
+    const select = document.getElementById('intBusinessSelect');
+    select.innerHTML = '<option value="">-- اختر نشاط تجاري --</option>' +
+      bizs.map(b => `<option value="${b.id}">${escHtml(b.name_ar || b.name)}</option>`).join('');
+  } catch (err) { }
+}
+
+async function loadIntegrations() {
+  const bizId = document.getElementById('intBusinessSelect').value;
+  if (!bizId) return;
+
+  try {
+    const data = await api(`/api/admin/businesses/${bizId}`);
+    const integrations = data.integrations || [];
+    const getInt = (ch) => integrations.find(i => i.channel === ch);
+
+    const baseUrl = CONFIG.serverUrl;
+
+    document.getElementById('integrationsContent').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;">
+        
+        <!-- WIDGET -->
+        <div class="integration-card connected">
+          <div class="integration-header">
+            <div class="integration-icon" style="background:rgba(108,99,255,0.15);color:#6C63FF;font-size:22px;">💻</div>
+            <div class="integration-info">
+              <h3>Chat Widget</h3>
+              <p>ويدجت المحادثة للمواقع</p>
+            </div>
+            <span class="integration-status" style="background:rgba(0,230,118,0.1);color:#00E676;border:1px solid rgba(0,230,118,0.2);">● مفعّل</span>
+          </div>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">أضف هذا الكود إلى موقعك الإلكتروني:</p>
+          <div class="copy-code" onclick="copyCode(this)">
+            <button class="copy-btn">نسخ</button>
+            &lt;script src="${baseUrl}/widget.js" data-business-id="${bizId}"&gt;&lt;/script&gt;
+          </div>
+          <div style="margin-top:12px;">
+            <a href="${baseUrl}/widget-demo.html?b=${bizId}" target="_blank" class="btn btn-secondary btn-sm">
+              <i class="fas fa-eye"></i> معاينة الويدجت
+            </a>
+          </div>
+        </div>
+
+        <!-- WHATSAPP -->
+        <div class="integration-card ${getInt('whatsapp')?.is_active ? 'connected' : ''}">
+          <div class="integration-header">
+            <div class="integration-icon" style="background:rgba(37,211,102,0.15);color:#25D366;font-size:22px;">📱</div>
+            <div class="integration-info">
+              <h3>WhatsApp Business</h3>
+              <p>Meta Cloud API</p>
+            </div>
+            <span class="integration-status" style="background:${getInt('whatsapp')?.is_active ? 'rgba(0,230,118,0.1)' : 'rgba(255,255,255,0.05)'};color:${getInt('whatsapp')?.is_active ? '#00E676' : 'var(--text-muted)'};border:1px solid ${getInt('whatsapp')?.is_active ? 'rgba(0,230,118,0.2)' : 'var(--border)'};">
+              ${getInt('whatsapp')?.is_active ? '● مربوط' : '○ غير مربوط'}
+            </span>
+          </div>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Webhook URL:</p>
+          <div class="copy-code" onclick="copyCode(this)">
+            <button class="copy-btn">نسخ</button>
+            ${baseUrl}/api/whatsapp/webhook
+          </div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%;" onclick="openIntModal('whatsapp','${bizId}')">
+            <i class="fas fa-cog"></i> إعداد بيانات WhatsApp
+          </button>
+        </div>
+
+        <!-- FACEBOOK -->
+        <div class="integration-card ${getInt('facebook')?.is_active ? 'connected' : ''}">
+          <div class="integration-header">
+            <div class="integration-icon" style="background:rgba(24,119,242,0.15);color:#1877F2;font-size:22px;">📘</div>
+            <div class="integration-info">
+              <h3>Facebook Messenger</h3>
+              <p>Meta Graph API</p>
+            </div>
+            <span class="integration-status" style="background:${getInt('facebook')?.is_active ? 'rgba(0,230,118,0.1)' : 'rgba(255,255,255,0.05)'};color:${getInt('facebook')?.is_active ? '#00E676' : 'var(--text-muted)'};border:1px solid ${getInt('facebook')?.is_active ? 'rgba(0,230,118,0.2)' : 'var(--border)'};">
+              ${getInt('facebook')?.is_active ? '● مربوط' : '○ غير مربوط'}
+            </span>
+          </div>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Webhook URL:</p>
+          <div class="copy-code" onclick="copyCode(this)">
+            <button class="copy-btn">نسخ</button>
+            ${baseUrl}/api/facebook/webhook
+          </div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%;" onclick="openIntModal('facebook','${bizId}')">
+            <i class="fas fa-cog"></i> إعداد بيانات Facebook
+          </button>
+        </div>
+
+        <!-- INSTAGRAM -->
+        <div class="integration-card ${getInt('instagram')?.is_active ? 'connected' : ''}">
+          <div class="integration-header">
+            <div class="integration-icon" style="background:rgba(225,48,108,0.15);color:#E1306C;font-size:22px;">📸</div>
+            <div class="integration-info">
+              <h3>Instagram DM</h3>
+              <p>Meta Business API</p>
+            </div>
+            <span class="integration-status" style="background:${getInt('instagram')?.is_active ? 'rgba(0,230,118,0.1)' : 'rgba(255,255,255,0.05)'};color:${getInt('instagram')?.is_active ? '#00E676' : 'var(--text-muted)'};border:1px solid ${getInt('instagram')?.is_active ? 'rgba(0,230,118,0.2)' : 'var(--border)'};">
+              ${getInt('instagram')?.is_active ? '● مربوط' : '○ غير مربوط'}
+            </span>
+          </div>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Webhook URL:</p>
+          <div class="copy-code" onclick="copyCode(this)">
+            <button class="copy-btn">نسخ</button>
+            ${baseUrl}/api/instagram/webhook
+          </div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%;" onclick="openIntModal('instagram','${bizId}')">
+            <i class="fas fa-cog"></i> إعداد بيانات Instagram
+          </button>
+        </div>
+
+        <!-- TIKTOK -->
+        <div class="integration-card ${getInt('tiktok')?.is_active ? 'connected' : ''}">
+          <div class="integration-header">
+            <div class="integration-icon" style="background:rgba(254,44,85,0.15);color:#FE2C55;font-size:22px;">🎵</div>
+            <div class="integration-info">
+              <h3>TikTok Direct Messages</h3>
+              <p>TikTok for Developers</p>
+            </div>
+            <span class="integration-status" style="background:${getInt('tiktok')?.is_active ? 'rgba(0,230,118,0.1)' : 'rgba(255,255,255,0.05)'};color:${getInt('tiktok')?.is_active ? '#00E676' : 'var(--text-muted)'};border:1px solid ${getInt('tiktok')?.is_active ? 'rgba(0,230,118,0.2)' : 'var(--border)'};">
+              ${getInt('tiktok')?.is_active ? '● مربوط' : '○ غير مربوط'}
+            </span>
+          </div>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Webhook URL:</p>
+          <div class="copy-code" onclick="copyCode(this)">
+            <button class="copy-btn">نسخ</button>
+            ${baseUrl}/api/tiktok/webhook?business_id=${bizId}
+          </div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%;" onclick="openIntModal('tiktok','${bizId}')">
+            <i class="fas fa-cog"></i> إعداد بيانات TikTok
+          </button>
+        </div>
+
+        <!-- TELEGRAM -->
+        <div class="integration-card ${getInt('telegram')?.is_active ? 'connected' : ''}">
+          <div class="integration-header">
+            <div class="integration-icon" style="background:rgba(34,158,217,0.15);color:#229ED9;font-size:22px;">✈️</div>
+            <div class="integration-info">
+              <h3>Telegram Bot</h3>
+              <p>Telegram Bot API</p>
+            </div>
+            <span class="integration-status" style="background:${getInt('telegram')?.is_active ? 'rgba(0,230,118,0.1)' : 'rgba(255,255,255,0.05)'};color:${getInt('telegram')?.is_active ? '#00E676' : 'var(--text-muted)'};border:1px solid ${getInt('telegram')?.is_active ? 'rgba(0,230,118,0.2)' : 'var(--border)'};">
+              ${getInt('telegram')?.is_active ? '● مربوط' : '○ غير مربوط'}
+            </span>
+          </div>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Webhook URL:</p>
+          <div class="copy-code" onclick="copyCode(this)">
+            <button class="copy-btn">نسخ</button>
+            ${baseUrl}/api/telegram/webhook?business_id=${bizId}
+          </div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%;" onclick="openIntModal('telegram','${bizId}')">
+            <i class="fas fa-cog"></i> إعداد بيانات Telegram Bot
+          </button>
+        </div>
+
+        <!-- TWITTER / X -->
+        <div class="integration-card ${getInt('twitter')?.is_active ? 'connected' : ''}">
+          <div class="integration-header">
+            <div class="integration-icon" style="background:rgba(29,161,242,0.15);color:#1DA1F2;font-size:22px;">🐦</div>
+            <div class="integration-info">
+              <h3>Twitter / X DMs</h3>
+              <p>X Account Activity API</p>
+            </div>
+            <span class="integration-status" style="background:${getInt('twitter')?.is_active ? 'rgba(0,230,118,0.1)' : 'rgba(255,255,255,0.05)'};color:${getInt('twitter')?.is_active ? '#00E676' : 'var(--text-muted)'};border:1px solid ${getInt('twitter')?.is_active ? 'rgba(0,230,118,0.2)' : 'var(--border)'};">
+              ${getInt('twitter')?.is_active ? '● مربوط' : '○ غير مربوط'}
+            </span>
+          </div>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Webhook URL:</p>
+          <div class="copy-code" onclick="copyCode(this)">
+            <button class="copy-btn">نسخ</button>
+            ${baseUrl}/api/twitter/webhook?business_id=${bizId}
+          </div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%;" onclick="openIntModal('twitter','${bizId}')">
+            <i class="fas fa-cog"></i> إعداد بيانات Twitter / X
+          </button>
+        </div>
+
+      </div>
+    `;
+  } catch (err) {
+    showToast('خطأ في تحميل التكاملات', 'error');
+  }
+}
+
+function openIntegrations(bizId) {
+  navigateTo('integrations');
+  setTimeout(() => {
+    document.getElementById('intBusinessSelect').value = bizId;
+    loadIntegrations();
+  }, 100);
+}
+
+function openIntModal(channel, bizId) {
+  const titles = {
+    whatsapp: '📱 إعداد WhatsApp Business',
+    facebook: '📘 إعداد Facebook Messenger',
+    instagram: '📸 إعداد Instagram DM',
+    tiktok: '🎵 إعداد TikTok Direct Messages',
+    telegram: '✈️ إعداد Telegram Bot',
+    twitter: '🐦 إعداد Twitter / X DMs'
+  };
+  document.getElementById('intModalTitle').textContent = titles[channel] || 'إعداد التكامل';
+
+  const bodies = {
+    whatsapp: `
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.8;">
+        للحصول على هذه البيانات، انتقل إلى <strong>Meta for Developers → WhatsApp → API Setup</strong>
+      </p>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Phone Number ID</label>
+        <input class="form-input" id="int-wa-phone" placeholder="123456789012345" dir="ltr">
+      </div>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Access Token</label>
+        <input class="form-input" id="int-wa-token" placeholder="EAAxxxxxx..." dir="ltr" type="password">
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label">Verify Token (اختره بنفسك)</label>
+        <input class="form-input" id="int-wa-verify" placeholder="my_secret_verify_token" dir="ltr">
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="closeModal('integrationModal')">إلغاء</button>
+        <button class="btn btn-primary" onclick="saveIntegration('whatsapp','${bizId}')"><i class="fas fa-save"></i> حفظ</button>
+      </div>
+    `,
+    facebook: `
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.8;">
+        من <strong>Meta for Developers → Messenger → Settings</strong>
+      </p>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Page ID</label>
+        <input class="form-input" id="int-fb-page" placeholder="123456789" dir="ltr">
+      </div>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Page Access Token</label>
+        <input class="form-input" id="int-fb-token" placeholder="EAAxxxxxx..." dir="ltr" type="password">
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label">App Secret</label>
+        <input class="form-input" id="int-fb-secret" placeholder="xxxxx" dir="ltr" type="password">
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="closeModal('integrationModal')">إلغاء</button>
+        <button class="btn btn-primary" onclick="saveIntegration('facebook','${bizId}')"><i class="fas fa-save"></i> حفظ</button>
+      </div>
+    `,
+    instagram: `
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.8;">
+        Instagram يستخدم نفس Meta App كـ Facebook. تأكد من ربط حساب Instagram Business بصفحة Facebook.
+      </p>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Instagram Account ID</label>
+        <input class="form-input" id="int-ig-account" placeholder="123456789" dir="ltr">
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label">Page Access Token</label>
+        <input class="form-input" id="int-ig-token" placeholder="EAAxxxxxx..." dir="ltr" type="password">
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="closeModal('integrationModal')">إلغاء</button>
+        <button class="btn btn-primary" onclick="saveIntegration('instagram','${bizId}')"><i class="fas fa-save"></i> حفظ</button>
+      </div>
+    `,
+    tiktok: `
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.8;">
+        من <strong>TikTok for Developers → App Settings → Webhook / Direct Message API</strong>
+      </p>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">App Key / Client Key</label>
+        <input class="form-input" id="int-tiktok-key" placeholder="awxxxxxx" dir="ltr">
+      </div>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Access Token (User/Page Access Token)</label>
+        <input class="form-input" id="int-tiktok-token" placeholder="act.xxxxxx" dir="ltr" type="password">
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label class="form-label">Verify Token</label>
+        <input class="form-input" id="int-tiktok-verify" placeholder="tiktok_verify_2024" dir="ltr">
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="closeModal('integrationModal')">إلغاء</button>
+        <button class="btn btn-primary" onclick="saveIntegration('tiktok','${bizId}')"><i class="fas fa-save"></i> حفظ</button>
+      </div>
+    `,
+    telegram: `
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.8;">
+        احصل على الـ Bot Token مجاناً من <strong>@BotFather</strong> في Telegram.
+      </p>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Telegram Bot Token</label>
+        <input class="form-input" id="int-telegram-token" placeholder="123456789:ABCdefGHIjklmno..." dir="ltr" type="password">
+      </div>
+      <div style="background:rgba(34,158,217,0.08);border:1px solid rgba(34,158,217,0.2);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;">
+        <p style="font-size:12px;color:var(--text-secondary);line-height:1.7;">
+          💡 <strong>ربط سريع تلقائي:</strong> عند الحفظ سنقوم بربط الـ Webhook تلقائياً مع Telegram!
+        </p>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="closeModal('integrationModal')">إلغاء</button>
+        <button class="btn btn-primary" onclick="saveIntegration('telegram','${bizId}')"><i class="fas fa-save"></i> حفظ وربط</button>
+      </div>
+    `,
+    twitter: `
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;line-height:1.8;">
+        من <strong>Twitter Developer Portal → Projects & Apps → Keys and Tokens</strong>
+      </p>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Consumer Key / API Key</label>
+        <input class="form-input" id="int-twitter-key" placeholder="API Key" dir="ltr">
+      </div>
+      <div class="form-group" style="margin-bottom:14px;">
+        <label class="form-label">Bearer Token</label>
+        <input class="form-input" id="int-twitter-token" placeholder="AAAAA..." dir="ltr" type="password">
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;">
+        <button class="btn btn-secondary" onclick="closeModal('integrationModal')">إلغاء</button>
+        <button class="btn btn-primary" onclick="saveIntegration('twitter','${bizId}')"><i class="fas fa-save"></i> حفظ</button>
+      </div>
+    `
+  };
+
+  document.getElementById('intModalBody').innerHTML = bodies[channel] || '';
+  openModal('integrationModal');
+}
+
+async function saveIntegration(channel, bizId) {
+  let config = {};
+  if (channel === 'whatsapp') {
+    config = {
+      phone_number_id: document.getElementById('int-wa-phone')?.value,
+      access_token: document.getElementById('int-wa-token')?.value,
+      verify_token: document.getElementById('int-wa-verify')?.value,
+    };
+  } else if (channel === 'facebook') {
+    config = {
+      page_id: document.getElementById('int-fb-page')?.value,
+      page_access_token: document.getElementById('int-fb-token')?.value,
+      app_secret: document.getElementById('int-fb-secret')?.value,
+    };
+  } else if (channel === 'instagram') {
+    config = {
+      page_id: document.getElementById('int-ig-account')?.value,
+      page_access_token: document.getElementById('int-ig-token')?.value,
+    };
+  } else if (channel === 'tiktok') {
+    config = {
+      client_key: document.getElementById('int-tiktok-key')?.value,
+      access_token: document.getElementById('int-tiktok-token')?.value,
+      verify_token: document.getElementById('int-tiktok-verify')?.value,
+    };
+  } else if (channel === 'telegram') {
+    const token = document.getElementById('int-telegram-token')?.value;
+    config = { bot_token: token };
+    // Auto register webhook with telegram API
+    if (token) {
+      const webhookUrl = `${CONFIG.serverUrl}/api/telegram/webhook?business_id=${bizId}`;
+      try {
+        await fetch(`https://api.telegram.org/bot${token}/setWebhook?url=${encodeURIComponent(webhookUrl)}`);
+        showToast('تم تسجيل Telegram Webhook بنجاح ✈️', 'success');
+      } catch (e) { console.warn('Telegram setWebhook failed', e); }
+    }
+  } else if (channel === 'twitter') {
+    config = {
+      consumer_key: document.getElementById('int-twitter-key')?.value,
+      bearer_token: document.getElementById('int-twitter-token')?.value,
+    };
+  }
+
+  try {
+    await api(`/api/admin/businesses/${bizId}/integrations/${channel}`, 'PUT', { config, is_active: true });
+    showToast('تم حفظ التكامل بنجاح ✅', 'success');
+    closeModal('integrationModal');
+    loadIntegrations();
+  } catch (err) {
+    showToast('خطأ: ' + err.message, 'error');
+  }
+}
+
+// =================== SETTINGS ===================
+function loadSettings() {
+  document.getElementById('adminTokenInput').value = CONFIG.adminToken;
+  document.getElementById('serverUrlInput').value = CONFIG.serverUrl;
+
+  fetch(CONFIG.serverUrl + '/health').then(r => r.json()).then(data => {
+    document.getElementById('systemInfo').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div><strong>الحالة:</strong> <span style="color:var(--green);">${data.status}</span></div>
+        <div><strong>الإصدار:</strong> ${data.version}</div>
+        <div><strong>البيئة:</strong> ${data.environment}</div>
+        <div><strong>الوقت:</strong> ${new Date(data.timestamp).toLocaleString('ar')}</div>
+      </div>
+    `;
+  }).catch(() => {
+    document.getElementById('systemInfo').innerHTML = '<span style="color:var(--red);">تعذر الاتصال بالسيرفر</span>';
+  });
+}
+
+function saveSettings() {
+  CONFIG.adminToken = document.getElementById('adminTokenInput').value;
+  CONFIG.serverUrl = document.getElementById('serverUrlInput').value.replace(/\/$/, '');
+  localStorage.setItem('adminToken', CONFIG.adminToken);
+  localStorage.setItem('serverUrl', CONFIG.serverUrl);
+  showToast('تم حفظ الإعدادات ✅', 'success');
+  loadOverview();
+}
+
+// =================== UTILITIES ===================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function showToast(message, type = 'info') {
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  const icons = { success: 'fa-check-circle', error: 'fa-times-circle', info: 'fa-info-circle' };
+  toast.innerHTML = `<i class="fas ${icons[type]}"></i> ${message}`;
+  document.getElementById('toastContainer').appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateX(-20px)'; setTimeout(() => toast.remove(), 300); }, 3500);
+}
+
+function formatTime(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = now - d;
+  if (diff < 60000) return 'الآن';
+  if (diff < 3600000) return Math.floor(diff/60000) + ' د';
+  if (diff < 86400000) return Math.floor(diff/3600000) + ' س';
+  return d.toLocaleDateString('ar');
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function copyCode(el) {
+  const text = el.textContent.replace('نسخ', '').trim();
+  navigator.clipboard.writeText(text).then(() => showToast('تم النسخ ✅', 'success'));
+}
+
+function refreshData() {
+  const activePage = document.querySelector('.page.active')?.id?.replace('page-', '');
+  if (activePage) navigateTo(activePage);
+}
+
+// Color picker sync
+document.getElementById('biz-color').addEventListener('input', function() {
+  document.getElementById('biz-color-text').value = this.value;
+});
+document.getElementById('biz-color-text').addEventListener('input', function() {
+  if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) {
+    document.getElementById('biz-color').value = this.value;
+  }
+});
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('open');
+  });
+});
+
+// Conversation search
+document.getElementById('convSearch').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  const filtered = state.conversations.filter(c =>
+    (c.customer_name || '').toLowerCase().includes(q) ||
+    (c.last_message || '').toLowerCase().includes(q) ||
+    (c.channel || '').toLowerCase().includes(q)
+  );
+  renderConvList(filtered);
+});
+
+// =================== INIT ===================
+async function init() {
+  initSocket();
+  await loadOverview();
+  await loadBusinesses();
+}
+
+init();
+</script>
+</body>
+</html>

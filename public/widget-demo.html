@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>Widget Demo - AI Agent Platform</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family: 'Cairo', sans-serif; background: #1a1a2e; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .demo { text-align: center; color: white; padding: 40px; }
+    h1 { font-size: 32px; margin-bottom: 10px; background: linear-gradient(135deg, #6C63FF, #4ECDC4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    p { color: rgba(255,255,255,0.6); font-size: 16px; }
+  </style>
+</head>
+<body>
+  <div class="demo">
+    <h1>🤖 AI Agent Demo</h1>
+    <p>انقر على زر المحادثة في الزاوية لاختبار المساعد الذكي</p>
+  </div>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const bizId = params.get('b');
+    if (bizId) {
+      const s = document.createElement('script');
+      s.src = '/widget.js';
+      s.setAttribute('data-business-id', bizId);
+      document.head.appendChild(s);
+    }
+  </script>
+</body>
+</html>
