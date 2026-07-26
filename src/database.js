@@ -92,25 +92,36 @@ const Conversation = mongoose.model('Conversation', ConversationSchema);
 const Message = mongoose.model('Message', MessageSchema);
 const Analytics = mongoose.model('Analytics', AnalyticsSchema);
 
-// =====================================================
-// CONNECTION
-// =====================================================
+let cachedPromise = null;
+
 async function initDatabase() {
   const uri = process.env.MONGODB_URI;
-  if (!uri) throw new Error('MONGODB_URI is not set in environment variables');
+  if (!uri) {
+    console.warn('⚠️ MONGODB_URI is not set in environment variables');
+    throw new Error('MONGODB_URI is not set in Vercel Environment Variables');
+  }
 
-  try {
-    await mongoose.connect(uri, {
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  if (!cachedPromise) {
+    cachedPromise = mongoose.connect(uri, {
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
+    }).then(async (m) => {
+      console.log('✅ MongoDB connected:', m.connection.host);
+      try { await seedDemoData(); } catch (e) {}
+      return m;
+    }).catch(err => {
+      cachedPromise = null;
+      console.error('❌ MongoDB connection failed:', err.message);
+      throw err;
     });
-    console.log('✅ MongoDB connected:', mongoose.connection.host);
-    await seedDemoData();
-    return mongoose.connection;
-  } catch (err) {
-    console.error('❌ MongoDB connection failed:', err.message);
-    throw err;
   }
+
+  await cachedPromise;
+  return mongoose.connection;
 }
 
 mongoose.connection.on('disconnected', () => console.warn('⚠️  MongoDB disconnected'));

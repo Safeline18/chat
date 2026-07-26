@@ -83,6 +83,21 @@ app.use(rateLimit({
 }));
 
 // =====================================================
+// DB CONNECTION MIDDLEWARE (SERVERLESS / VERCEL COMPATIBLE)
+// =====================================================
+app.use(async (req, res, next) => {
+  try {
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState !== 1) {
+      await initDatabase();
+    }
+  } catch (err) {
+    console.error('DB middleware connection error:', err.message);
+  }
+  next();
+});
+
+// =====================================================
 // STATIC FILES
 // =====================================================
 app.use(express.static(path.join(__dirname, 'public')));
@@ -139,26 +154,6 @@ app.use((err, req, res, next) => {
 
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
-});
-
-// =====================================================
-// LAZY INIT MIDDLEWARE FOR VERCEL / SERVERLESS
-// =====================================================
-let isDbInitialized = false;
-
-app.use(async (req, res, next) => {
-  if (!isDbInitialized) {
-    try {
-      if (process.env.MONGODB_URI) {
-        await initDatabase();
-      }
-      initGemini();
-      isDbInitialized = true;
-    } catch (err) {
-      console.error('Lazy init error:', err.message);
-    }
-  }
-  next();
 });
 
 // =====================================================
