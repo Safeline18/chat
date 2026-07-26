@@ -1595,17 +1595,21 @@ function renderBusinesses(bizs) {
           <div class="business-avatar" style="background:${b.primary_color}22; color:${b.primary_color};">${emoji}</div>
           <div class="business-info">
             <h3>${escHtml(b.name_ar || b.name)}</h3>
-            <p>${escHtml(b.name)}</p>
+            <p>${escHtml(b.website_url || b.name)}</p>
           </div>
           <span class="business-badge ${isActive ? 'badge-active' : 'badge-inactive'}">${isActive ? '● نشط' : '● متوقف'}</span>
         </div>
         <div class="business-channels">
           <span class="channel-badge channel-widget">💻 ويدجت</span>
+          ${b.scanned_pages_count ? `<span class="business-badge" style="background:rgba(108,99,255,0.15);color:var(--accent);border:1px solid rgba(108,99,255,0.3);font-size:11px;padding:3px 10px;border-radius:20px;">📄 ${b.scanned_pages_count} صفحة RAG</span>` : ''}
           ${b.industry ? `<span class="business-badge" style="background:${b.primary_color}15;color:${b.primary_color};border:1px solid ${b.primary_color}30;font-size:11px;padding:3px 10px;border-radius:20px;">${escHtml(b.industry)}</span>` : ''}
         </div>
         <div style="display:flex;gap:8px;margin-top:14px;">
           <button class="btn btn-sm btn-secondary" style="flex:1;" onclick="event.stopPropagation();openIntegrations('${bizId}')">
             <i class="fas fa-plug"></i> التكاملات
+          </button>
+          <button class="btn btn-sm btn-secondary" title="إعادة قراءة وتدريب الـ AI من الموقع" onclick="event.stopPropagation();recrawlWebsite('${bizId}')">
+            <i class="fas fa-sync"></i>
           </button>
           <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteBusiness('${bizId}','${escHtml(b.name)}')">
             <i class="fas fa-trash"></i>
@@ -1619,7 +1623,7 @@ function renderBusinesses(bizs) {
     <div class="add-business-card" style="background:linear-gradient(135deg, rgba(108,99,255,0.12), rgba(78,205,196,0.12));border:2px dashed var(--accent);" onclick="quickCreateFromUrl()">
       <i class="fas fa-magic" style="font-size:36px;color:var(--accent);margin-bottom:12px;"></i>
       <span style="font-weight:800;font-size:15px;color:var(--text-primary);">🚀 إنشاء بنقرة واحدة برابط الموقع</span>
-      <span style="font-size:11px;color:var(--text-secondary);margin-top:6px;text-align:center;">سحب وقراءة الاسم، الخدمات، والأسئلة الشائعة تلقائياً 100%</span>
+      <span style="font-size:11px;color:var(--text-secondary);margin-top:6px;text-align:center;">سحب وقراءة كافة صفحات الموقع ومحتواها تلقائياً 100%</span>
     </div>
     <div class="add-business-card" onclick="openAddBusiness()">
       <i class="fas fa-plus-circle"></i>
@@ -1633,14 +1637,25 @@ async function quickCreateFromUrl() {
   const url = prompt('🌐 أدخل رابط موقعك الإلكتروني لإنشاء المشروع وتدريب الـ AI عليه تلقائياً:\nمثال: https://yourwebsite.com');
   if (!url || !url.trim()) return;
 
-  showToast('جاري قراءة موقعك وتوفير البيانات بالذكاء الاصطناعي... ⏳', 'info');
+  showToast('جاري قراءة موقعك واكتشاف الصفحات وبناء الـ RAG AI... ⏳', 'info');
 
   try {
     const data = await api('/api/admin/businesses/create-from-url', 'POST', { websiteUrl: url.trim() });
-    showToast(`تم إنشاء المشروع وتدريب الـ AI بنجاح! 🎉 (${data.business.name_ar || data.business.name})`, 'success');
+    showToast(`تم إنشاء المشروع وقراءة ${data.pagesAnalyzed || 1} صفحة بنجاح! 🎉 (${data.business.name_ar || data.business.name})`, 'success');
     loadBusinesses();
   } catch (err) {
     showToast('خطأ في الإنشاء التلقائي: ' + err.message, 'error');
+  }
+}
+
+async function recrawlWebsite(bizId) {
+  showToast('جاري إعادة قراءة صفحات الموقع وتحديث بيانات الـ RAG... ⏳', 'info');
+  try {
+    const data = await api(`/api/admin/businesses/${bizId}/scrape`, 'POST', {});
+    showToast(`تم تحديث بيانات الذكاء الاصطناعي بنجاح! 🎉 (تم تحليل ${data.pagesAnalyzed} صفحة)`, 'success');
+    loadBusinesses();
+  } catch (err) {
+    showToast('خطأ في تحديث البيانات: ' + err.message, 'error');
   }
 }
 

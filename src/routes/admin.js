@@ -84,22 +84,37 @@ router.post('/businesses', async (req, res) => {
   }
 });
 
-// ---- 1-CLICK CREATE BUSINESS FROM WEBSITE URL ----
+// ---- 1-CLICK CREATE BUSINESS FROM WEBSITE URL (DEEP CRAWLER + RAG) ----
 router.post('/businesses/create-from-url', async (req, res) => {
   try {
     const { websiteUrl } = req.body;
     if (!websiteUrl) return res.status(400).json({ error: 'websiteUrl is required' });
 
-    const { generateBusinessFromUrl } = require('../utils/scraper');
-    const autoData = await generateBusinessFromUrl(websiteUrl);
+    // Initial business doc creation
+    const initialName = websiteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+    const b = await businesses.create({
+      name: initialName,
+      name_ar: initialName,
+      website_url: websiteUrl,
+      ai_status: 'analyzing'
+    });
 
-    const b = await businesses.create(autoData);
     await integrations.upsert(b._id, 'widget', {}, true);
 
-    res.status(201).json({ success: true, business: b });
+    // Deep Crawl & RAG Extraction
+    const { processWebsiteAndGenerateRAG } = require('../utils/crawler');
+    const ragResult = await processWebsiteAndGenerateRAG(websiteUrl, b._id);
+
+    const updatedBiz = await businesses.getById(b._id);
+    res.status(201).json({
+      success: true,
+      business: updatedBiz,
+      pagesAnalyzed: ragResult.pagesCount,
+      chunksCount: ragResult.chunksCount
+    });
   } catch (err) {
     console.error('Create from URL error:', err);
-    res.status(500).json({ error: 'Failed to create business from URL: ' + err.message });
+    res.status(500).json({ error: 'Failed to crawl & create business: ' + err.message });
   }
 });
 
@@ -110,7 +125,7 @@ router.put('/businesses/:id', async (req, res) => {
 
     const allowed = ['name', 'name_ar', 'description', 'description_ar', 'industry', 'agent_name', 'agent_name_ar',
       'system_prompt', 'welcome_message', 'welcome_message_ar', 'avatar_url', 'primary_color', 'secondary_color',
-      'language', 'escalation_email', 'is_active', 'knowledge_base'];
+      'language', 'escalation_email', 'is_active', 'knowledge_base', 'phone', 'whatsapp', 'shipping_policy', 'return_policy'];
 
     const data = {};
     for (const key of allowed) {
@@ -133,34 +148,39 @@ router.delete('/businesses/:id', async (req, res) => {
   }
 });
 
-// ---- SCRAPE WEBSITE FOR BUSINESS ----
+// ---- REFRESH & RE-CRAWL WEBSITE FOR RAG ----
 router.post('/businesses/:id/scrape', async (req, res) => {
   try {
-    const { websiteUrl } = req.body;
-    if (!websiteUrl) return res.status(400).json({ error: 'websiteUrl is required' });
-
     const b = await businesses.getById(req.params.id);
     if (!b) return res.status(404).json({ error: 'Business not found' });
 
-    const { scrapeWebsite } = require('../utils/scraper');
-    const scrapedData = await scrapeWebsite(websiteUrl);
+    const websiteUrl = req.body.websiteUrl || b.website_url;
+    if (!websiteUrl) return res.status(400).json({ error: 'websiteUrl is required' });
 
-    let existingKb = [];
-    try {
-      existingKb = typeof b.knowledge_base === 'string' ? JSON.parse(b.knowledge_base || '[]') : (b.knowledge_base || []);
-    } catch (e) {}
+    const { processWebsiteAndGenerateRAG } = require('../utils/crawler');
+    const ragResult = await processWebsiteAndGenerateRAG(websiteUrl, req.params.id);
 
-    const newKb = [...existingKb, ...scrapedData.kbItems];
-    const updated = await businesses.update(req.params.id, {
-      description: scrapedData.summary || b.description,
-      description_ar: scrapedData.summary || b.description_ar,
-      knowledge_base: JSON.stringify(newKb)
+    const updatedBiz = await businesses.getById(req.params.id);
+    res.json({
+      success: true,
+      pagesAnalyzed: ragResult.pagesCount,
+      chunksCount: ragResult.chunksCount,
+      business: updatedBiz
     });
-
-    res.json({ success: true, count: scrapedData.kbItems.length, business: updated });
   } catch (err) {
-    console.error('Scrape error:', err);
-    res.status(500).json({ error: 'Scraping failed: ' + err.message });
+    console.error('Crawl error:', err);
+    res.status(500).json({ error: 'Re-crawl failed: ' + err.message });
+  }
+});
+
+// ---- GET BUSINESS LEADS ----
+router.get('/businesses/:id/leads', async (req, res) => {
+  try {
+    const { leads } = require('../database');
+    const bizLeads = await leads.getByBusiness(req.params.id);
+    res.json(bizLeads);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

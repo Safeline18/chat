@@ -16,6 +16,10 @@ const BusinessSchema = new mongoose.Schema({
   description: String,
   description_ar: String,
   industry: { type: String, default: 'general' },
+  website_url: String,
+  last_scanned_at: Date,
+  scanned_pages_count: { type: Number, default: 0 },
+  ai_status: { type: String, default: 'active' },
   agent_name: { type: String, default: 'Assistant' },
   agent_name_ar: { type: String, default: 'المساعد' },
   system_prompt: String,
@@ -27,7 +31,12 @@ const BusinessSchema = new mongoose.Schema({
   language: { type: String, default: 'auto' },
   knowledge_base: { type: String, default: '[]' },
   working_hours: { type: Object, default: { enabled: false } },
+  phone: String,
+  whatsapp: String,
   escalation_email: String,
+  shipping_policy: String,
+  return_policy: String,
+  payment_methods: String,
   is_active: { type: Number, default: 1 },
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
@@ -83,6 +92,42 @@ const AnalyticsSchema = new mongoose.Schema({
 
 AnalyticsSchema.index({ business_id: 1, created_at: -1 });
 
+const KnowledgeChunkSchema = new mongoose.Schema({
+  _id: { type: String, default: uuidv4 },
+  business_id: { type: String, required: true, ref: 'Business' },
+  source_url: String,
+  page_title: String,
+  content_type: { type: String, default: 'general' }, // services, pricing, faq, branches, policies, manual
+  language: { type: String, default: 'ar' },
+  content: { type: String, required: true },
+  keywords: [String]
+}, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
+
+KnowledgeChunkSchema.index({ business_id: 1, content_type: 1 });
+KnowledgeChunkSchema.index({ business_id: 1, content: 'text' });
+
+const LeadSchema = new mongoose.Schema({
+  _id: { type: String, default: uuidv4 },
+  business_id: { type: String, required: true, ref: 'Business' },
+  conversation_id: { type: String, ref: 'Conversation' },
+  customer_name: String,
+  customer_phone: String,
+  customer_email: String,
+  service_requested: String,
+  details: String,
+  status: { type: String, enum: ['new', 'contacted', 'closed'], default: 'new' }
+}, { timestamps: { createdAt: 'created_at' } });
+
+LeadSchema.index({ business_id: 1, created_at: -1 });
+
+const ConversationSummarySchema = new mongoose.Schema({
+  _id: { type: String, default: uuidv4 },
+  conversation_id: { type: String, required: true, ref: 'Conversation', unique: true },
+  business_id: { type: String, required: true, ref: 'Business' },
+  summary: { type: String, required: true },
+  message_count: { type: Number, default: 0 }
+}, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
+
 // =====================================================
 // MODELS
 // =====================================================
@@ -91,6 +136,9 @@ const Integration = mongoose.model('Integration', IntegrationSchema);
 const Conversation = mongoose.model('Conversation', ConversationSchema);
 const Message = mongoose.model('Message', MessageSchema);
 const Analytics = mongoose.model('Analytics', AnalyticsSchema);
+const KnowledgeChunk = mongoose.model('KnowledgeChunk', KnowledgeChunkSchema);
+const Lead = mongoose.model('Lead', LeadSchema);
+const ConversationSummary = mongoose.model('ConversationSummary', ConversationSummarySchema);
 
 let cachedPromise = null;
 
@@ -414,9 +462,54 @@ const analytics = {
   }
 };
 
+const knowledgeChunks = {
+  async add(businessId, chunkData) {
+    return KnowledgeChunk.create({ ...chunkData, business_id: businessId });
+  },
+  async addBulk(businessId, chunksArray) {
+    const docs = chunksArray.map(c => ({ ...c, business_id: businessId }));
+    return KnowledgeChunk.insertMany(docs);
+  },
+  async getByBusiness(businessId, limit = 50) {
+    return KnowledgeChunk.find({ business_id: businessId }).limit(limit).lean();
+  },
+  async searchRelevant(businessId, queryText, limit = 6) {
+    if (!queryText) return KnowledgeChunk.find({ business_id: businessId }).limit(limit).lean();
+
+    const words = queryText.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    if (!words.length) return KnowledgeChunk.find({ business_id: businessId }).limit(limit).lean();
+
+    const regexArray = words.map(w => new RegExp(w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
+
+    const matches = await KnowledgeChunk.find({
+      business_id: businessId,
+      $or: [
+        { content: { $in: regexArray } },
+        { keywords: { $in: words } }
+      ]
+    }).limit(limit).lean();
+
+    if (matches.length > 0) return matches;
+
+    return KnowledgeChunk.find({ business_id: businessId }).limit(limit).lean();
+  },
+  async clearBusinessChunks(businessId) {
+    return KnowledgeChunk.deleteMany({ business_id: businessId });
+  }
+};
+
+const leads = {
+  async create(data) {
+    return Lead.create(data);
+  },
+  async getByBusiness(businessId, limit = 50) {
+    return Lead.find({ business_id: businessId }).sort({ created_at: -1 }).limit(limit).lean();
+  }
+};
+
 // Helper: get raw db (for legacy compat in webhooks)
 function getDb() {
-  return { Business, Integration, Conversation, Message, Analytics };
+  return { Business, Integration, Conversation, Message, Analytics, KnowledgeChunk, Lead, ConversationSummary };
 }
 
 module.exports = {
@@ -427,10 +520,15 @@ module.exports = {
   conversations,
   messages,
   analytics,
+  knowledgeChunks,
+  leads,
   // Export models directly
   Business,
   Integration,
   Conversation,
   Message,
   Analytics,
+  KnowledgeChunk,
+  Lead,
+  ConversationSummary
 };
