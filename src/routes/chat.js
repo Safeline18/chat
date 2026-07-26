@@ -44,8 +44,16 @@ router.post('/message', chatLimiter, async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Chat error:', err);
-    res.status(500).json({ error: 'Failed to generate response. Please try again.' });
+    console.error('Chat error:', err.message);
+    const { findKbFallback } = require('../gemini');
+    const fallbackText = findKbFallback(req.body.business || {}, req.body.message || '', 'ar');
+    res.json({
+      success: true,
+      conversationId: req.body.conversationId || `conv_${Date.now()}`,
+      message: fallbackText,
+      language: 'ar',
+      typing_delay: 800
+    });
   }
 });
 
