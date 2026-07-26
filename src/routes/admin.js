@@ -28,7 +28,9 @@ router.get('/overview', async (req, res) => {
 // ---- BUSINESSES ----
 router.get('/businesses', async (req, res) => {
   try {
-    res.json(await businesses.getAll());
+    const list = await businesses.getAll();
+    const normalized = list.map(b => ({ ...b, id: b._id || b.id }));
+    res.json(normalized);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -42,7 +44,8 @@ router.get('/businesses/:id', async (req, res) => {
       businesses.getStats(req.params.id),
       integrations.getByBusiness(req.params.id)
     ]);
-    res.json({ ...b, stats, integrations: ints });
+    const normalizedInts = ints.map(i => ({ ...i, id: i._id || i.id }));
+    res.json({ ...b, id: b._id || b.id, stats, integrations: normalizedInts });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -147,7 +150,8 @@ router.get('/conversations', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 50;
     const offset = parseInt(req.query.offset) || 0;
-    res.json(await conversations.getAll(limit, offset));
+    const list = await conversations.getAll(limit, offset);
+    res.json(list.map(c => ({ ...c, id: c._id || c.id })));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -158,7 +162,8 @@ router.get('/businesses/:id/conversations', async (req, res) => {
     const limit = parseInt(req.query.limit) || 50;
     const offset = parseInt(req.query.offset) || 0;
     const status = req.query.status || null;
-    res.json(await conversations.getByBusiness(req.params.id, limit, offset, status));
+    const list = await conversations.getByBusiness(req.params.id, limit, offset, status);
+    res.json(list.map(c => ({ ...c, id: c._id || c.id })));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -169,7 +174,9 @@ router.get('/conversations/:id/messages', async (req, res) => {
     const conv = await conversations.getById(req.params.id);
     if (!conv) return res.status(404).json({ error: 'Conversation not found' });
     const msgs = await messages.getByConversation(req.params.id, 100);
-    res.json({ conversation: conv, messages: msgs });
+    const normalizedConv = { ...conv, id: conv._id || conv.id };
+    const normalizedMsgs = msgs.map(m => ({ ...m, id: m._id || m.id }));
+    res.json({ conversation: normalizedConv, messages: normalizedMsgs });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

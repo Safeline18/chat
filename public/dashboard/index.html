@@ -1559,10 +1559,11 @@ function renderBusinesses(bizs) {
   };
 
   const cards = bizs.map(b => {
+    const bizId = b.id || b._id;
     const emoji = industryEmojis[b.industry] || '🏢';
     const isActive = b.is_active === 1;
     return `
-      <div class="business-card" onclick="editBusiness('${b.id}')">
+      <div class="business-card" onclick="editBusiness('${bizId}')">
         <div class="business-card-accent" style="background:linear-gradient(90deg, ${b.primary_color}, ${b.secondary_color || '#4ECDC4'});"></div>
         <div class="business-header">
           <div class="business-avatar" style="background:${b.primary_color}22; color:${b.primary_color};">${emoji}</div>
@@ -1577,10 +1578,10 @@ function renderBusinesses(bizs) {
           ${b.industry ? `<span class="business-badge" style="background:${b.primary_color}15;color:${b.primary_color};border:1px solid ${b.primary_color}30;font-size:11px;padding:3px 10px;border-radius:20px;">${escHtml(b.industry)}</span>` : ''}
         </div>
         <div style="display:flex;gap:8px;margin-top:14px;">
-          <button class="btn btn-sm btn-secondary" style="flex:1;" onclick="event.stopPropagation();openIntegrations('${b.id}')">
+          <button class="btn btn-sm btn-secondary" style="flex:1;" onclick="event.stopPropagation();openIntegrations('${bizId}')">
             <i class="fas fa-plug"></i> التكاملات
           </button>
-          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteBusiness('${b.id}','${escHtml(b.name)}')">
+          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteBusiness('${bizId}','${escHtml(b.name)}')">
             <i class="fas fa-trash"></i>
           </button>
         </div>
@@ -1853,7 +1854,7 @@ async function loadIntBusinesses() {
     state.businesses = bizs;
     const select = document.getElementById('intBusinessSelect');
     select.innerHTML = '<option value="">-- اختر نشاط تجاري --</option>' +
-      bizs.map(b => `<option value="${b.id}">${escHtml(b.name_ar || b.name)}</option>`).join('');
+      bizs.map(b => `<option value="${b.id || b._id}">${escHtml(b.name_ar || b.name)}</option>`).join('');
   } catch (err) { }
 }
 
