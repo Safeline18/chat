@@ -30,7 +30,7 @@
     },
     {
       "source": "/widget.js",
-      "destination": "/widget.js"
+      "destination": "/widget/chat-widget.js"
     },
     {
       "source": "/dashboard",
