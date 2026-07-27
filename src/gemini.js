@@ -1,10 +1,9 @@
 // =====================================================
-// AI Agent Platform - Pure Universal AI Engine
-// Multi-Provider AI Architecture: Gemini AI + Groq AI + OpenAI
+// AI Agent Platform - Gemini AI Integration
 // Multi-Tenant RAG, Conversation Memory, Universal Dialects, Lead Capture, & Human Handoff.
 // =====================================================
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 let genAI;
 
 function initGemini() {
@@ -12,24 +11,19 @@ function initGemini() {
   if (apiKey) {
     try {
       genAI = new GoogleGenerativeAI(apiKey);
-      console.log('✅ Gemini AI initialized successfully');
     } catch (e) {
       console.warn('⚠️ Gemini AI initialization warning:', e.message);
     }
   }
 }
 
-// =====================================================
 // DIALECT & LANGUAGE DETECTOR
-// =====================================================
 function detectLanguageAndDialect(text) {
   const msg = (text || '').trim();
-  const arabicPattern = /[\u0600-\u06FF]/;
-
+  const arabicPattern = /[؀-ۿ]/;
   if (!arabicPattern.test(msg)) {
     return { lang: 'en', dialect: 'English / Global' };
   }
-
   if (/حبيبي|يعطيك العافية|وش|وشو|كيفك|طال عمرك|يا بعدي|يا الغالي|ابشر|أبشر|تبغى|ودك|شلونك|يا هلا|ابي|أبي/i.test(msg)) {
     return { lang: 'ar', dialect: 'Saudi / Gulf (سعودي / خليجي)' };
   }
@@ -48,20 +42,15 @@ function detectLanguageAndDialect(text) {
   if (/ديال|بزاف|واخا|شنو|لاباس|دابا/i.test(msg)) {
     return { lang: 'ar', dialect: 'Moroccan (مغربي)' };
   }
-
   return { lang: 'ar', dialect: 'General Arabic' };
 }
 
-// =====================================================
-// DIRECT PROVIDERS (Gemini, Groq, OpenAI)
-// =====================================================
 async function callGeminiREST(apiKey, systemPrompt, sanitizedHistory, userMessage) {
   const contents = [];
   for (const h of sanitizedHistory) {
     contents.push({ role: h.role, parts: h.parts });
   }
   contents.push({ role: 'user', parts: [{ text: userMessage }] });
-
   const models = [
     'gemini-1.5-flash',
     'gemini-3.5-flash-lite',
@@ -71,7 +60,6 @@ async function callGeminiREST(apiKey, systemPrompt, sanitizedHistory, userMessag
     'gemini-2.0-flash',
     'gemini-flash-latest'
   ];
-
   for (const modelName of models) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
@@ -79,21 +67,19 @@ async function callGeminiREST(apiKey, systemPrompt, sanitizedHistory, userMessag
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          contents,
           systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents: contents,
           generationConfig: { temperature: 0.85, maxOutputTokens: 1024 }
         })
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (text) return text;
-      }
-    } catch (e) {}
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) return text;
+    } catch (e) {
+      console.warn(`⚠️ REST model ${modelName} failed:`, e.message);
+    }
   }
-
-  throw new Error('All Gemini REST models rate limited');
+  throw new Error('All Gemini REST models failed');
 }
 
 async function callGroqREST(apiKey, systemPrompt, sanitizedHistory, userMessage) {
@@ -111,13 +97,11 @@ async function callGroqREST(apiKey, systemPrompt, sanitizedHistory, userMessage)
     headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'llama-3.3-70b-versatile',
-      messages: messages,
-      temperature: 0.8,
+      messages,
+      temperature: 0.85,
       max_tokens: 1024
     })
   });
-
-  if (!res.ok) throw new Error(`Groq HTTP ${res.status}`);
   const data = await res.json();
   return data.choices?.[0]?.message?.content;
 }
@@ -137,23 +121,17 @@ async function callOpenAIREST(apiKey, systemPrompt, sanitizedHistory, userMessag
     headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'gpt-4o-mini',
-      messages: messages,
-      temperature: 0.8,
+      messages,
+      temperature: 0.85,
       max_tokens: 1024
     })
   });
-
-  if (!res.ok) throw new Error(`OpenAI HTTP ${res.status}`);
   const data = await res.json();
   return data.choices?.[0]?.message?.content;
 }
 
-// =====================================================
-// RAG & SYSTEM PROMPT BUILDER
-// =====================================================
 async function buildRAGSystemPrompt(business, userMessage, detectedInfo, conversationSummary = '', customerName = '', historyLength = 0) {
   const { knowledgeChunks: chunkDb } = require('./database');
-
   const bizId = business._id || business.id;
   const agentName = business.agent_name_ar || business.agent_name || 'هالة';
   const businessName = business.name_ar || business.name;
@@ -168,66 +146,78 @@ async function buildRAGSystemPrompt(business, userMessage, detectedInfo, convers
 
   let ragContext = '';
   if (relevantChunks && relevantChunks.length > 0) {
-    // 1. Strict filtering of corrupted or binary chunks from the DB
     const cleanChunks = relevantChunks.filter(c => {
       const content = (c.content || '').toLowerCase();
       const url = (c.source_url || '').toLowerCase();
+      if (content.includes('.woff') || content.includes('.js') || content.includes('.map') || content.includes('.json')) return false;
       if (url.includes('.woff') || url.includes('.js') || url.includes('.map') || url.includes('.json')) return false;
-      if (content.includes('woff2 file') || content.includes('font-family')) return false;
       return true;
     });
-
-    // 2. Hide raw internal paths from the AI to prevent hallucination
     ragContext = cleanChunks.map(c => {
       return `[معلومة موثقة]:\n${c.content.substring(0, 1000)}`;
     }).join('\n\n');
   }
 
   let manualKbText = '';
-  try {
-    const kb = typeof business.knowledge_base === 'string' ? JSON.parse(business.knowledge_base || '[]') : (business.knowledge_base || []);
-    const cleanKb = kb.filter(i => {
-      const q = (i.question || '').toLowerCase();
-      const a = (i.answer || '').toLowerCase();
-      if (q.includes('.woff') || q.includes('.js') || q.includes('.map') || q.includes('.json')) return false;
-      if (a.includes('woff2 file') || a.includes('font-family')) return false;
-      return true;
-    });
-    if (cleanKb.length > 0) {
-      manualKbText = cleanKb.map(i => {
-        const cleanQuestion = i.question.replace(/https?:\/\/[^\s]+/g, '').replace('معلومات عن:', '').trim() || 'معلومات عامة';
-        return `معلومة:\n${cleanQuestion}\nالتفاصيل:\n${i.a  const greetingRule = historyLength > 0 ?
-    `🛑 **تنبيه هام جداً**: هذه ليست الرسالة الأولى في الشات. لقد قمت بالترحيب والتعريف بنفسك سابقاً. يمنع منعاً باتاً الترحيب مجدداً أو قول "أهلاً بك"، "معك أحمد"، "مرحباً"، أو ذكر اسم الشركة مجدداً. ادخل في صلب الإجابة وحل المشكلة مباشرة بدون أي مقدمات أو تكرار للاسم.` :
+  if (business.knowledge_base) {
+    try {
+      const kb = typeof business.knowledge_base === 'string' ? JSON.parse(business.knowledge_base || '[]') : (business.knowledge_base || []);
+      const cleanKb = kb.filter(i => {
+        const q = (i.question || '').toLowerCase();
+        const a = (i.answer || '').toLowerCase();
+        if (q.includes('.woff') || q.includes('.js') || q.includes('.map') || q.includes('.json')) return false;
+        if (a.includes('woff2 file') || a.includes('font-family')) return false;
+        return true;
+      });
+      if (cleanKb.length > 0) {
+        manualKbText = cleanKb.map(i => {
+          const cleanQuestion = i.question.replace(/https?:\/\/[^\s]+/g, '').replace('معلومات عن:', '').trim() || 'معلومات عامة';
+          return `معلومة:\n${cleanQuestion}\nالتفاصيل:\n${i.answer}`;
+        }).join('\n\n');
+      }
+    } catch (e) {
+      console.warn('⚠️ Knowledge base parse warning:', e.message);
+    }
+  }
+
+  const greetingRule = historyLength > 0 ?
+    `🛑 **تنبيه هام جداً**: هذه ليست الرسالة الأولى في الشات. لقد قمت بالترحيب والتعريف بنفسك سابقاً. يمنع منعاً باتاً الترحيب مجدداً أو قول "أهلاً بك"، "معك ${agentName}"، "مرحباً"، أو ذكر اسم الشركة مجدداً. ادخل في صلب الإجابة وحل المشكلة مباشرة بدون أي مقدمات أو تكرار للاسم.` :
     `👋 **الرسالة الأولى**: رحب بالعميل بلطف وعرّف بنفسك ("معك ${agentName} ممثل خدمة العملاء لشركة ${businessName}") واسأله بلطف عن اسمه الكريم إذا لم يذكره.`;
 
   const customerNameRule = customerName ?
     `- اسم العميل الحالي هو "${customerName}". خاطبه باسمه باحترام في إجابتك (مثل: "يا أستاذ ${customerName}" أو "أبشر يا ${customerName}").` :
     `- في البداية إذا لم يذكر العميل اسمه، رحب به واسأله بلطف عن اسمه الكريم ("تفضل وش اسمك الكريم عشان أقدر أخدمك بشكل أفضل؟").`;
 
-  return `أنت إنسان حقيقي وذكي جداً يعمل كممثل خدمة عملاء ومبيعات خبير لشركة "${businessName}" واسمك هو "${agentName}".
+  const waUrl = business.whatsapp ? `https://wa.me/${business.whatsapp.replace(/\+/g, '')}` : null;
 
-## 🌟 قواعد وموجهات أسلوب الحوار والتعامل (Core Instructions):
-1. ${greetingRule}
-2. 👤 **معرفة اسم العميل ومخاطبته به (Customer Name Rules)**:
-   ${customerNameRule}
-3. ⚡ **الإجابة المباشرة والواضحة بدون طول مفرط**:�اً باتاً تكرار "أنا هالة من شركة..." أو إعادة الترحيب في الرسائل التالية إطلاقاً**. ادخل في صلب الإجابة مباشرة بأناقة وبساطة.
-2. 👤 **معرفة اسم العميل ومخاطبته به (Customer Name Rules)**:
-   - في البداية إذا لم يذكر العميل اسمه، رحب به واسأله بلطف عن اسمه الكريم ("أهلاً بك! معك ${agentName}.. تفضل وش اسمك الكريم عشان أقدر أخدمك بشكل أفضل؟").
-   - عندما يذكر العميل اسمه (مثل: "أنا أحمد" أو "محمد")، تذكره دائماً وخاطبه باسمه باحترام في كل إجابة تالية (مثل: "تفضل يا أستاذ أحمد"، "أبشر يا أستاذ محمد").
-3. ⚡ **الإجابة المباشرة والواضحة بدون طول مفرط**:
-   - أجب بدقة وإيجاز أنيق ومريح للعين.
-4. 💬 **التحويل للواتساب والتواصل السريع (WhatsApp Conversion)**:
+  return `أنت موظف خدمة عملاء بشري ذكي، محترف، وودود للغاية.
+
+معلومات النشاط الحالي:
+- اسم الموظف الافتراضي: ${agentName}
+- اسم الشركة أو النشاط: ${businessName}
+- وصف النشاط والخدمات: ${businessDesc || 'تقديم الخدمات والدعم للعملاء'}
+
+الخصائص الشخصية ونبرة الصوت:
+- تحدث بأسلوب بشري دافئ، طبيعي، ومرن جداً، بعيداً عن الجمود أو الأسلوب الروبوتتي.
+- كن تفاعلياً: افهم مقصد العميل من رسالته الحالية ورد عليه بسياق الكلام مباشرة.
+- الردود الشخصية والاجتماعية والودية: إذا سألك العميل عن أحوالك، أو صحتك، أو سألك أسئلة شخصية ودية واجتماعية (مثل: "كيف حالك"، "كيف حال أمك"، "شخبارك"، "وش مسوي")، رد عليه كبشر حقيقي بأسلوب دافئ وودود للغاية يناسب لهجته وسياقه (مثال: "الله يسعدك يا غالي، الحمد لله بخير وعافية ربي يحفظك ويحفظ لك كل غالي"، "تسلم يا طيب، أمي بألف خير وصحة الحمد لله، كلك ذوق"). لا تجب بأسلوب روبوت أو ترفض الإجابة بجفاء.
+
+قواعد صارمة ومحظورات تقنية (Strict Rules):
+1. ممنوع نهائياً ولأي سبب ذكر أو طباعة أي روابط (URLs)، مسارات ملفات برمجية، أكواد، رموز تصميم، أو ملفات ثابتة (مثل _next/static، woff2، CSS، أو صور). تجاهل أي تفاصيل تقنية قد توجد في النص أو قاعدة المعرفة.
+2. ${greetingRule}
+3. الاعتماد على قاعدة المعرفة والنشاط: أجب العميل بدقة بناءً على معلومات النشاط المتاحة فقط. وإذا كانت المعلومة غير متوفرة، اعتذر بلطف ووجهه للطريقة الصحيحة للتواصل مع فريق العمل.
+4. الإيجاز والوضوح: اجعل إجاباتك مختصرة، مباشرة، ومفيدة للعميل دون رغي زائد.
+5. التحويل للواتساب والتواصل السريع (WhatsApp Conversion):
    - إذا طلب العميل التواصل، أو رقم الجوال، أو شعرت أنه محتار أو يريد حجزاً فورياً:
      اعرض رقم الهاتف: "${business.phone || 'المسجل لدينا'}" والبريد: "${business.escalation_email || ''}".
      ${waUrl ? `وأضف رابط الواتساب المباشر بالصيغة التالية تماماً: [💬 اضغط هنا للتواصل المباشر عبر الواتساب](${waUrl})` : ''}
-5. 🧠 **المرونة والمعرفة العامة في المجال**:
-   - أنت خبير ومستشار كامل في مجال "${business.industry || businessName}". إذا سأل العميل سؤالاً عاماً في نفس المجال، اشرح له الخطوات كمستشار خبير ثم اعرض عليه تولي الخدمة له من خلال "${businessName}".
-6. 🛑 **الرد المباشر بأسلوب الحوار (مهم جداً)**:
-   - أجب كبشر يتحدث مباشرة في الشات. يمنع منعاً باتاً صياغة ردك بأسلوب (سؤال:... إجابة:...) أو نسخ روابط الملفات التقنية (مثل woff2 أو js) من سياق البيانات، بل لخص الفكرة بلغة عربية سلسة وودية.
 
-## 🏢 بيانات ومستندات النشاط التجاري:
-- اسم النشاط: ${businessName}
-- الوصف والخدمات: ${businessDesc || 'شركة تقديم خدمات متميزة.'}
+كشف اللغة واللهجة (Adaptive Language & Dialect):
+- لغة ولهجة رسالة العميل الحالية هي: ${detectedInfo?.dialect || 'عربي عام'}
+- قم بتحليل لغة ولهجة العميل من رسالته الأخيرة فوراً وتكلم معه بها تلقائياً وبشكل طبيعي جداً (سواء كتب باللهجة المصرية، السعودية، الخليجية، الفصحى المبسطة، أو الإنجليزية)، ودون أي مبالغة أو تصنع.
+- ${customerNameRule}
+
+## 🏢 بيانات ومستندات النشاط التجاري الإضافية:
 - الهاتف: ${business.phone || 'غير مدون'}
 - البريد: ${business.escalation_email || 'غير مدون'}
 - الواتساب المباشر: ${waUrl || 'غير مدون'}
@@ -238,12 +228,8 @@ ${conversationSummary ? `## ملخص المحادثة السابقة:\n${convers
 ${business.system_prompt ? `## تعليمات إضافية خاصة من الإدارة:\n${business.system_prompt}` : ''}`;
 }
 
-// =====================================================
-// CORE CHAT FUNCTION
-// =====================================================
 async function generateResponse(business, conversationId, userMessage, channel = 'widget') {
   if (!genAI) initGemini();
-
   const { messages: msgDb, conversations: convDb, leads: leadDb, analytics } = require('./database');
   const detectedInfo = detectLanguageAndDialect(userMessage);
   const bizId = business._id || business.id;
@@ -255,58 +241,52 @@ async function generateResponse(business, conversationId, userMessage, channel =
   } catch (e) {}
 
   let customerName = currentConv?.customer_name || '';
-
-  // Automatic Name Detection & Memory Update
-  const nameMatch = userMessage.match(/(?:أنا|اسمي|معك|معاك|صديقك|العميل|اسمي هو|معك الأستاذ|معك الاستاذ)\s+([\u0600-\u06FFa-zA-Z]{2,20})/i);
-  if (nameMatch && nameMatch[1]) {
-    customerName = nameMatch[1].trim();
-    try {
-      await convDb.updateCustomerName(conversationId, customerName);
-    } catch (e) {}
+  if (!customerName) {
+    const nameMatch = userMessage.match(/(?:أنا|اسمي|معك|معاك|صديقك|العميل|اسمي هو|معك الأستاذ|معك الاستاذ)\s+([\u0600-\u06FFa-zA-Z]{2,20})/i);
+    if (nameMatch) {
+      customerName = nameMatch[1].trim();
+      try {
+        await convDb.updateCustomerName(conversationId, customerName);
+      } catch (e) {}
+    }
   }
 
-  let responseText = null;
-
-  // Detect Human Handoff Trigger
-  const isHandoffRequest = /أبغى موظف|ابي موظف|كلم موظف|أحتاج شخص|شخص بشري|خدمة عملاء بشرية|موظف بشري|human|agent|talk to human/i.test(userMessage);
-
+  const isHandoffRequest = /أبغى موظف|Double موظف|كلم موظف|أحتاج شخص|شخص بشري|خدمة عملاء بشرية|موظف بشري|human|agent|talk to human/i.test(userMessage);
   if (isHandoffRequest) {
     try {
       await convDb.updateStatus(conversationId, 'escalated');
     } catch (e) {}
   }
 
-  // Retrieve recent conversation history & sanitize roles
-  let sanitizedHistory = [];
+  let rawHistory = [];
   try {
-    const rawHistory = await msgDb.getHistory(conversationId, 15);
-    let lastRole = null;
+    rawHistory = await msgDb.getHistory(conversationId, 15);
+  } catch (e) {}
+
+  let sanitizedHistory = [];
+  if (rawHistory && rawHistory.length > 0) {
     for (const msg of rawHistory) {
       const role = msg.role === 'assistant' ? 'model' : 'user';
-      if (!msg.content || !msg.content.trim()) continue;
-      if (role !== lastRole) {
+      if (msg.content && msg.content.trim()) {
         sanitizedHistory.push({ role, parts: [{ text: msg.content.trim() }] });
-        lastRole = role;
       }
     }
     if (sanitizedHistory.length > 0 && sanitizedHistory[0].role !== 'user') sanitizedHistory.shift();
     if (sanitizedHistory.length > 0 && sanitizedHistory[sanitizedHistory.length - 1].role === 'user') sanitizedHistory.pop();
-  } catch (e) {}
+  }
 
   const systemPrompt = await buildRAGSystemPrompt(business, userMessage, detectedInfo, '', customerName, sanitizedHistory.length);
 
-  let groqError = null;
-  // Method 1: Try Groq AI (Llama-3.3-70b) - Free, Open, Ultra-Fast and highly smart in Arabic
+  let responseText = null;
+
   if (!responseText && process.env.GROQ_API_KEY) {
     try {
       responseText = await callGroqREST(process.env.GROQ_API_KEY, systemPrompt, sanitizedHistory, userMessage);
     } catch (gErr) {
-      groqError = gErr.message;
       console.warn('⚠️ Groq AI primary attempt failed:', gErr.message);
     }
   }
 
-  // Method 2: Try Gemini SDK
   if (!responseText && genAI) {
     try {
       const candidateModels = [
@@ -314,7 +294,6 @@ async function generateResponse(business, conversationId, userMessage, channel =
         'gemini-2.0-flash',
         'gemini-1.5-pro'
       ];
-
       for (const modelName of candidateModels) {
         try {
           const model = genAI.getGenerativeModel({
@@ -322,7 +301,6 @@ async function generateResponse(business, conversationId, userMessage, channel =
             systemInstruction: systemPrompt,
             generationConfig: { temperature: 0.85, topP: 0.95, maxOutputTokens: 1024 }
           });
-
           const chat = model.startChat({ history: sanitizedHistory });
           const result = await chat.sendMessage(userMessage);
           responseText = result.response.text();
@@ -336,7 +314,6 @@ async function generateResponse(business, conversationId, userMessage, channel =
     }
   }
 
-  // Method 3: Direct Gemini REST API fetch
   if (!responseText && apiKey) {
     try {
       responseText = await callGeminiREST(apiKey, systemPrompt, sanitizedHistory, userMessage);
@@ -345,7 +322,6 @@ async function generateResponse(business, conversationId, userMessage, channel =
     }
   }
 
-  // Method 4: OpenAI API Fallback (gpt-4o-mini)
   if (!responseText && process.env.OPENAI_API_KEY) {
     try {
       responseText = await callOpenAIREST(process.env.OPENAI_API_KEY, systemPrompt, sanitizedHistory, userMessage);
@@ -354,29 +330,29 @@ async function generateResponse(business, conversationId, userMessage, channel =
     }
   }
 
-  // Method 5: Smart Domain Fallback (Offline Expert Engine)
   if (!responseText) {
-    const { findKbFallback } = require('./gemini-fallback');
-    responseText = findKbFallback(business, userMessage, detectedInfo.lang);
-    if (groqError) {
-      responseText += `\n\n[Debug: Groq Error: ${groqError}]`;
+    try {
+      const { findKbFallback } = require('./gemini-fallback');
+      responseText = findKbFallback(business, userMessage, detectedInfo.lang);
+    } catch (fallbackErr) {
+      console.warn('⚠️ Fallback error:', fallbackErr.message);
     }
   }
 
-  // Auto Lead Detection
-  const phoneMatch = userMessage.match(/(?:\+?966|0)?5\d{8}|\+?\d{10,14}/);
-  if (phoneMatch) {
-    try {
+  try {
+    const phoneMatch = userMessage.match(/(?:\+?966|0)?5\d{8}|\+?\d{10,14}/);
+    if (phoneMatch) {
+      const phone = phoneMatch[0];
       await leadDb.create({
         business_id: bizId,
         conversation_id: conversationId,
-        customer_phone: phoneMatch[0],
+        phone,
+        name: customerName || 'عميل مهتم',
         details: `رسالة العميل: ${userMessage}`
       });
-    } catch (e) {}
-  }
+    }
+  } catch (e) {}
 
-  // Save to MongoDB
   try {
     await msgDb.add(conversationId, 'user', userMessage, { channel, lang: detectedInfo.lang });
     await msgDb.add(conversationId, 'assistant', responseText, { channel });
@@ -387,12 +363,8 @@ async function generateResponse(business, conversationId, userMessage, channel =
   return { text: responseText, language: detectedInfo.lang, dialect: detectedInfo.dialect, conversationId };
 }
 
-// =====================================================
-// STREAMING CHAT FUNCTION
-// =====================================================
 async function generateStreamingResponse(business, conversationId, userMessage, onChunk, channel = 'widget') {
   if (!genAI) initGemini();
-
   const { messages: msgDb, conversations: convDb, analytics } = require('./database');
   const detectedInfo = detectLanguageAndDialect(userMessage);
   const bizId = business._id || business.id;
@@ -402,26 +374,26 @@ async function generateStreamingResponse(business, conversationId, userMessage, 
 
   let customerName = currentConv?.customer_name || '';
 
-  let sanitizedHistory = [];
+  let rawHistory = [];
   try {
-    const rawHistory = await msgDb.getHistory(conversationId, 10);
-    let lastRole = null;
+    rawHistory = await msgDb.getHistory(conversationId, 10);
+  } catch (e) {}
+
+  let sanitizedHistory = [];
+  if (rawHistory && rawHistory.length > 0) {
     for (const msg of rawHistory) {
       const role = msg.role === 'assistant' ? 'model' : 'user';
-      if (!msg.content || !msg.content.trim()) continue;
-      if (role !== lastRole) {
+      if (msg.content && msg.content.trim()) {
         sanitizedHistory.push({ role, parts: [{ text: msg.content.trim() }] });
-        lastRole = role;
       }
     }
     if (sanitizedHistory.length > 0 && sanitizedHistory[0].role !== 'user') sanitizedHistory.shift();
     if (sanitizedHistory.length > 0 && sanitizedHistory[sanitizedHistory.length - 1].role === 'user') sanitizedHistory.pop();
-  } catch (e) {}
+  }
 
   const systemPrompt = await buildRAGSystemPrompt(business, userMessage, detectedInfo, '', customerName, sanitizedHistory.length);
 
   let fullResponse = '';
-
   if (genAI) {
     try {
       const model = genAI.getGenerativeModel({
@@ -429,10 +401,8 @@ async function generateStreamingResponse(business, conversationId, userMessage, 
         systemInstruction: systemPrompt,
         generationConfig: { temperature: 0.85, topP: 0.95, maxOutputTokens: 1024 }
       });
-
       const chat = model.startChat({ history: sanitizedHistory });
       const result = await chat.sendMessageStream(userMessage);
-
       for await (const chunk of result.stream) {
         const text = chunk.text();
         if (text) {
@@ -445,21 +415,20 @@ async function generateStreamingResponse(business, conversationId, userMessage, 
     }
   }
 
-  // Fallback to non-streaming if streaming failed
   if (!fullResponse) {
     const fallback = await generateResponse(business, conversationId, userMessage, channel);
     fullResponse = fallback.text;
     onChunk(fullResponse);
-    return;
   }
 
-  // Save to MongoDB
   try {
     await msgDb.add(conversationId, 'user', userMessage, { channel, lang: detectedInfo.lang });
     await msgDb.add(conversationId, 'assistant', fullResponse, { channel });
     await convDb.updateLastMessage(conversationId, userMessage, detectedInfo.lang);
     await analytics.track(bizId, 'message_sent', channel, { lang: detectedInfo.lang });
   } catch (e) {}
+
+  return { text: fullResponse, language: detectedInfo.lang, dialect: detectedInfo.dialect, conversationId };
 }
 
 function calculateTypingDelay(text) {
