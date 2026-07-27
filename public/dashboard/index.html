@@ -1452,7 +1452,15 @@
 <script>
 // =================== CONFIG ===================
 let CONFIG = {
-  serverUrl: localStorage.getItem('serverUrl') || window.location.origin,
+  serverUrl: (() => {
+    const saved = localStorage.getItem('serverUrl');
+    if (!saved) return window.location.origin;
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && (saved.includes('localhost') || saved.includes('127.0.0.1'))) {
+      localStorage.removeItem('serverUrl');
+      return window.location.origin;
+    }
+    return saved;
+  })(),
   adminToken: localStorage.getItem('adminToken') || 'admin123',
 };
 
