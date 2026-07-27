@@ -182,9 +182,7 @@ async function buildRAGSystemPrompt(business, userMessage, detectedInfo, convers
     }
   }
 
-  const greetingRule = historyLength > 0 ?
-    `🛑 **تنبيه هام وصارم جداً للذاكرة**: هذه محادثة مستمرة وليست الرسالة الأولى. يمنع منعاً باتاً الترحيب مجدداً، أو التعريف بنفسك، أو قول "معك ${agentName}"، أو "مرحباً بك"، أو ذكر اسم الشركة مجدداً. ادخل في صلب إجابة سؤال العميل الأخير مباشرة بدون أي مقدمات أو تكرار للاسم، وركز على حل المشكلة فوراً بناءً على تاريخ المحادثة المرفق.` :
-    `👋 **الرسالة الأولى فقط**: رحب بالعميل بلطف وعرّف بنفسك ("معك ${agentName} ممثل خدمة العملاء لشركة ${businessName}") واسأله بلطف عن اسمه الكريم إذا لم يذكره.`;
+  const greetingRule = `🛑 **تعليمات عدم التكرار والتعريف**: يمنع منعاً باتاً ولأي سبب التعريف بنفسك باسم الموظف أو الشركة في إجابتك، أو قول "معك ${agentName}" أو "مرحباً بك في..." أو الترحيب المكرر، لأن نافذة الشات تعرض بالفعل هذه المعلومات والترحيب الافتراضي للمستخدم. أجب العميل مباشرة وادخل في صلب الموضوع فوراً بشكل طبيعي وودود للغاية.`;
 
   const customerNameRule = customerName ?
     `- اسم العميل الحالي هو "${customerName}". خاطبه باسمه باحترام في إجابتك (مثل: "يا أستاذ ${customerName}" أو "أبشر يا ${customerName}").` :
@@ -236,7 +234,11 @@ async function buildRAGSystemPrompt(business, userMessage, detectedInfo, convers
 ${manualKbText ? `## الأسئلة والمعلومات التدريبية اليدوية:\n${manualKbText}\n` : ''}
 ${ragContext ? `## سياق المعلومات المسترجعة ذات الصلة (RAG Scraped Website Context):\n${ragContext}\n` : ''}
 ${conversationSummary ? `## ملخص المحادثة السابقة:\n${conversationSummary}\n` : ''}
-${business.system_prompt ? `## تعليمات إضافية خاصة من الإدارة:\n${business.system_prompt}` : ''}`;
+${business.system_prompt ? `## تعليمات إضافية خاصة من الإدارة:\n${business.system_prompt}\n` : ''}
+
+🛑 **تعليمات صارمة نهائية وحتمية (أولوية قصوى - تتجاوز أي تعليمات أخرى):**
+1. يُمنع منعاً باتاً ولأي سبب التعريف بنفسك باسم الموظف أو الشركة في إجابتك، أو قول "معك ${agentName}" أو "مرحباً بك في..." أو الترحيب المكرر. ادخل في صلب إجابة سؤال العميل الأخير مباشرة بدون أي مقدمات أو تكرار للاسم.
+2. إذا كان اسم العميل معروفاً وهو "${customerName}"، خاطبه باسمه بتقدير وود، وتجنب سؤاله عن اسمه مجدداً.`;
 }
 
 async function generateResponse(business, conversationId, userMessage, channel = 'widget') {
@@ -352,6 +354,17 @@ async function generateResponse(business, conversationId, userMessage, channel =
       responseText = findKbFallback(business, userMessage, detectedInfo.lang);
     } catch (fallbackErr) {
       console.warn('⚠️ Fallback error:', fallbackErr.message);
+    }
+  }
+
+  // --- AUTO APPEND WHATSAPP BUTTON FOR PRICING OR CONTACT ---
+  if (waUrl && responseText && !responseText.includes('wa.me') && !responseText.includes('[💬')) {
+    const lowerMessage = userMessage.toLowerCase();
+    const lowerResponse = responseText.toLowerCase();
+    const isPricing = /سعر|أسعار|بكم|تكلفة|تكاليف|كم يكلف|خصم|عروض|علاقات|اشتراك/i.test(lowerMessage) || /سعر|أسعار|بكم|تكلفة|تكاليف/i.test(lowerResponse);
+    const isContact = /واتساب|واتس|تواصل|رقم|هاتف|اتصال|تليفون|رسالة|أكلم/i.test(lowerMessage) || /واتساب|واتس|تواصل|رقم|جوال/i.test(lowerResponse);
+    if (isPricing || isContact) {
+      responseText += `\n\n[💬 اضغط هنا للتواصل المباشر عبر الواتساب](${waUrl})`;
     }
   }
 
