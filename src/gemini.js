@@ -168,10 +168,19 @@ async function buildRAGSystemPrompt(business, userMessage, detectedInfo, convers
 
   let ragContext = '';
   if (relevantChunks && relevantChunks.length > 0) {
-    ragContext = relevantChunks.map(c => {
-      const source = c.source_url ? `[الصفحة: ${c.source_url}]` : '[مستند يدوي]';
-      return `${source} [المجال: ${c.content_type}]\n${c.content}`;
-    }).join('\n\n---\n\n');
+    // 1. Strict filtering of corrupted or binary chunks from the DB
+    const cleanChunks = relevantChunks.filter(c => {
+      const content = (c.content || '').toLowerCase();
+      const url = (c.source_url || '').toLowerCase();
+      if (url.includes('.woff') || url.includes('.js') || url.includes('.map') || url.includes('.json')) return false;
+      if (content.includes('woff2 file') || content.includes('font-family')) return false;
+      return true;
+    });
+
+    // 2. Hide raw internal paths from the AI to prevent hallucination
+    ragContext = cleanChunks.map(c => {
+      return `[معلومة موثقة]:\n${c.content.substring(0, 1000)}`;
+    }).join('\n\n');
   }
 
   let manualKbText = '';
