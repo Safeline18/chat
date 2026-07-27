@@ -139,12 +139,31 @@ async function generateResponse(business, conversationId, userMessage, channel =
 
   if (genAI) {
     try {
-      // Retrieve recent conversation history
-      const history = await msgDb.getHistory(conversationId, 15);
-      const geminiHistory = history.map(msg => ({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }]
-      }));
+      // Retrieve recent conversation history & sanitize roles to strictly alternate (user -> model -> user -> model)
+      const rawHistory = await msgDb.getHistory(conversationId, 15);
+      const sanitizedHistory = [];
+      let lastRole = null;
+
+      for (const msg of rawHistory) {
+        const role = msg.role === 'assistant' ? 'model' : 'user';
+        if (!msg.content || !msg.content.trim()) continue;
+
+        if (role !== lastRole) {
+          sanitizedHistory.push({
+            role: role,
+            parts: [{ text: msg.content.trim() }]
+          });
+          lastRole = role;
+        }
+      }
+
+      // Ensure history starts with 'user' and ends with 'model' so startChat is 100% valid
+      if (sanitizedHistory.length > 0 && sanitizedHistory[0].role !== 'user') {
+        sanitizedHistory.shift();
+      }
+      if (sanitizedHistory.length > 0 && sanitizedHistory[sanitizedHistory.length - 1].role === 'user') {
+        sanitizedHistory.pop();
+      }
 
       // Build RAG System Prompt
       const systemPrompt = await buildRAGSystemPrompt(business, userMessage, detectedInfo);
@@ -170,7 +189,7 @@ async function generateResponse(business, conversationId, userMessage, channel =
             }
           });
 
-          const chat = model.startChat({ history: geminiHistory });
+          const chat = model.startChat({ history: sanitizedHistory });
           const result = await chat.sendMessage(userMessage);
           responseText = result.response.text();
           if (responseText) break;
