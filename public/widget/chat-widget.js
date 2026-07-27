@@ -757,17 +757,19 @@
     // Bold text: **text**
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#ffffff;font-weight:700;">$1</strong>');
 
-    // Clickable Links: [Title](URL)
+    // Markdown Links: [Title](URL)
     html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, (match, title, url) => {
+      const cleanTitle = title.replace(/^💬\s*/, '');
       if (url.includes('wa.me') || url.includes('whatsapp.com')) {
-        return `<br><a href="${url}" target="_blank" class="aip-wa-btn">💬 ${title}</a><br>`;
+        return `<div style="margin:8px 0;"><a href="${url}" target="_blank" rel="noopener" class="aip-wa-btn">💬 ${cleanTitle}</a></div>`;
       }
-      return `<a href="${url}" target="_blank" class="aip-link">${title}</a>`;
+      return `<a href="${url}" target="_blank" rel="noopener" class="aip-link">${cleanTitle}</a>`;
     });
 
-    // Standalone WhatsApp links
-    html = html.replace(/(https?:\/\/(?:wa\.me|api\.whatsapp\.com)[^\s<]+)/g, (url) => {
-      return `<br><a href="${url}" target="_blank" class="aip-wa-btn">💬 تواصل مباشر عبر الواتساب</a><br>`;
+    // Standalone WhatsApp links (not already inside href)
+    html = html.replace(/(^|[^"])https?:\/\/(?:wa\.me|api\.whatsapp\.com)\/([^\s<"]+)/g, (match, prefix, path) => {
+      const fullUrl = `https://wa.me/${path}`;
+      return `${prefix}<div style="margin:8px 0;"><a href="${fullUrl}" target="_blank" rel="noopener" class="aip-wa-btn">💬 تواصل مباشر عبر الواتساب</a></div>`;
     });
 
     // Bullet points
