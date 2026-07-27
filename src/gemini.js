@@ -233,6 +233,22 @@ async function generateResponse(business, conversationId, userMessage, channel =
   const bizId = business._id || business.id;
   const apiKey = process.env.GEMINI_API_KEY;
 
+  let currentConv = null;
+  try {
+    currentConv = await convDb.getById(conversationId);
+  } catch (e) {}
+
+  let customerName = currentConv?.customer_name || '';
+
+  // Automatic Name Detection & Memory Update
+  const nameMatch = userMessage.match(/(?:أنا|اسمي|معك|معاك|صديقك|العميل|اسمي هو|معك الأستاذ|معك الاستاذ)\s+([\u0600-\u06FFa-zA-Z]{2,20})/i);
+  if (nameMatch && nameMatch[1]) {
+    customerName = nameMatch[1].trim();
+    try {
+      await convDb.updateCustomerName(conversationId, customerName);
+    } catch (e) {}
+  }
+
   let responseText = null;
 
   // Detect Human Handoff Trigger
