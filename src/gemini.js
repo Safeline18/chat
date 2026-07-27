@@ -258,11 +258,13 @@ async function generateResponse(business, conversationId, userMessage, channel =
 
   const systemPrompt = await buildRAGSystemPrompt(business, userMessage, detectedInfo, '', customerName, sanitizedHistory.length);
 
+  let groqError = null;
   // Method 1: Try Groq AI (Llama-3.3-70b) - Free, Open, Ultra-Fast and highly smart in Arabic
   if (!responseText && process.env.GROQ_API_KEY) {
     try {
       responseText = await callGroqREST(process.env.GROQ_API_KEY, systemPrompt, sanitizedHistory, userMessage);
     } catch (gErr) {
+      groqError = gErr.message;
       console.warn('⚠️ Groq AI primary attempt failed:', gErr.message);
     }
   }
@@ -319,6 +321,9 @@ async function generateResponse(business, conversationId, userMessage, channel =
   if (!responseText) {
     const { findKbFallback } = require('./gemini-fallback');
     responseText = findKbFallback(business, userMessage, detectedInfo.lang);
+    if (groqError) {
+      responseText += `\n\n[Debug: Groq Error: ${groqError}]`;
+    }
   }
 
   // Auto Lead Detection
