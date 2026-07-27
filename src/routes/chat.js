@@ -45,7 +45,7 @@ router.post('/message', chatLimiter, async (req, res) => {
 
   } catch (err) {
     console.error('Chat error:', err.message);
-    const { findKbFallback } = require('../gemini');
+    const { findKbFallback } = require('../gemini-fallback');
     const fallbackText = findKbFallback(req.body.business || {}, req.body.message || '', 'ar');
     res.json({
       success: true,
