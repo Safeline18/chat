@@ -178,7 +178,7 @@ async function buildRAGSystemPrompt(business, userMessage, detectedInfo, convers
   try {
     const kb = typeof business.knowledge_base === 'string' ? JSON.parse(business.knowledge_base || '[]') : (business.knowledge_base || []);
     if (kb.length > 0) {
-      manualKbText = kb.map(i => `سؤال: ${i.question}\nإجابة: ${i.answer}`).join('\n\n');
+      manualKbText = kb.map(i => `معلومة:\n${i.question}\nالتفاصيل:\n${i.answer}`).join('\n\n');
     }
   } catch (e) {}
 
