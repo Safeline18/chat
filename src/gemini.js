@@ -62,27 +62,38 @@ async function callGeminiREST(apiKey, systemPrompt, sanitizedHistory, userMessag
   }
   contents.push({ role: 'user', parts: [{ text: userMessage }] });
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+  const models = [
+    'gemini-1.5-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-3.1-flash-lite',
+    'gemini-2.5-flash',
+    'gemini-1.5-flash-8b',
+    'gemini-2.0-flash',
+    'gemini-flash-latest'
+  ];
 
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents: contents,
-      generationConfig: { temperature: 0.85, maxOutputTokens: 1024 }
-    })
-  });
+  for (const modelName of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: contents,
+          generationConfig: { temperature: 0.85, maxOutputTokens: 1024 }
+        })
+      });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Gemini REST API HTTP ${res.status}: ${errText}`);
+      if (res.ok) {
+        const data = await res.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text) return text;
+      }
+    } catch (e) {}
   }
 
-  const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('Empty response from Gemini REST API');
-  return text;
+  throw new Error('All Gemini REST models rate limited');
 }
 
 async function callGroqREST(apiKey, systemPrompt, sanitizedHistory, userMessage) {
@@ -251,12 +262,14 @@ async function generateResponse(business, conversationId, userMessage, channel =
   if (genAI) {
     try {
       const candidateModels = [
-        'gemini-flash-latest',
-        'gemini-pro-latest',
-        'gemini-1.5-flash-latest',
-        process.env.GEMINI_MODEL,
+        'gemini-1.5-flash',
+        'gemini-3.5-flash-lite',
+        'gemini-3.1-flash-lite',
+        'gemini-2.5-flash',
+        'gemini-1.5-flash-8b',
         'gemini-2.0-flash',
-        'gemini-1.5-flash'
+        'gemini-flash-latest',
+        'gemini-pro-latest'
       ].filter((v, i, a) => v && a.indexOf(v) === i);
 
       for (const modelName of candidateModels) {
