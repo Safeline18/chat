@@ -1,7 +1,7 @@
 /**
- * AI Agent Platform - WhatsApp-Style Chat Widget
+ * AI Agent Platform - WhatsApp-Style Chat Widget with Interactive Emoji Picker
  * Usage: <script src="/widget.js" data-business-id="YOUR_ID"></script>
- * Version: 2.1.0
+ * Version: 2.2.0
  */
 (function () {
   'use strict';
@@ -34,6 +34,14 @@
     unreadCount: 0,
   };
 
+  const EMOJI_LIST = [
+    '😊', '😂', '😍', '🥰', '👍', '🙏', '❤️', '🔥',
+    '✨', '🎉', '👏', '😁', '😎', '🥳', '🤔', '😅',
+    '🙌', '💯', '👋', '🌹', '🤝', '⭐', '💡', '✅',
+    '👌', '💬', '📞', '📍', '🌸', '💐', '🤍', '💪',
+    '🤩', '😜', '😇', '😴', '🙈', '🎯', '🚀', '🎁'
+  ];
+
   function getUserLang() {
     const lang = navigator.language || 'en';
     return lang.startsWith('ar') ? 'ar' : 'en';
@@ -45,7 +53,7 @@
     return getUserLang() === 'ar' ? (ar || en) : en;
   }
 
-  // =================== STYLES (WHATSAPP ELEGANT THEME) ===================
+  // =================== STYLES ===================
   const styles = `
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap');
 
@@ -59,7 +67,7 @@
       direction: ${isRTL() ? 'rtl' : 'ltr'};
     }
 
-    /* TOGGLE BUTTON (WhatsApp Green) */
+    /* TOGGLE BUTTON */
     #aip-toggle {
       width: 60px; height: 60px;
       border-radius: 50%;
@@ -188,7 +196,7 @@
 
     .aip-close-btn:hover { background: rgba(255, 255, 255, 0.28); }
 
-    /* MESSAGES CONTAINER (WhatsApp Background Pattern) */
+    /* MESSAGES CONTAINER */
     #aip-messages {
       flex: 1;
       overflow-y: auto;
@@ -228,14 +236,14 @@
       box-shadow: 0 1px 1px rgba(11, 20, 26, 0.12);
     }
 
-    /* BOT BUBBLE (WhatsApp White Received) */
+    /* BOT BUBBLE */
     .aip-bubble-bot {
       background: #FFFFFF !important;
       color: #111B21 !important;
       border-radius: 12px 12px 12px 2px;
     }
 
-    /* USER BUBBLE (WhatsApp Light Green Sent) */
+    /* USER BUBBLE */
     .aip-bubble-user {
       background: #D9FDD3 !important;
       color: #111B21 !important;
@@ -285,7 +293,7 @@
     }
     .aip-action-btn:hover { background: #006653; }
 
-    /* INPUT CONTAINER (WhatsApp Web Style) */
+    /* INPUT CONTAINER */
     #aip-input-container {
       background: #F0F2F5;
       border-top: 1px solid #E9EDEF;
@@ -293,6 +301,7 @@
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
+      position: relative;
     }
 
     #aip-input-area {
@@ -331,13 +340,62 @@
     #aip-input::placeholder { color: #8696A0; }
 
     #aip-emoji-btn {
-      font-size: 19px;
+      font-size: 20px;
       cursor: pointer;
-      opacity: 0.7;
-      transition: opacity 0.2s;
+      opacity: 0.75;
+      transition: transform 0.15s, opacity 0.15s;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #aip-emoji-btn:hover { opacity: 1; transform: scale(1.15); }
+
+    /* EMOJI PICKER POPUP */
+    #aip-emoji-picker {
+      position: absolute;
+      bottom: 68px;
+      ${isRTL() ? 'right: 14px;' : 'left: 14px;'}
+      width: 270px;
+      max-height: 200px;
+      background: #FFFFFF;
+      border: 1px solid #E9EDEF;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+      padding: 10px;
+      display: none;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 6px;
+      z-index: 100;
+      overflow-y: auto;
+      animation: aip-picker-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes aip-picker-in {
+      from { opacity: 0; transform: translateY(8px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    #aip-emoji-picker.show {
+      display: grid;
+    }
+
+    .aip-emoji-item {
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      border-radius: 8px;
+      transition: background 0.15s, transform 0.15s;
       user-select: none;
     }
-    #aip-emoji-btn:hover { opacity: 1; }
+
+    .aip-emoji-item:hover {
+      background: #F0F2F5;
+      transform: scale(1.25);
+    }
 
     #aip-send {
       width: 36px; height: 36px;
@@ -464,8 +522,11 @@
 
         <!-- INPUT AREA -->
         <div id="aip-input-container">
+          <!-- EMOJI PICKER POPUP -->
+          <div id="aip-emoji-picker"></div>
+
           <div id="aip-input-area">
-            <span id="aip-emoji-btn">😊</span>
+            <span id="aip-emoji-btn" title="اختر إيموجي">😊</span>
             <textarea id="aip-input" placeholder="${inputPlaceholder}" rows="1" maxlength="2000"></textarea>
             <button id="aip-send" aria-label="Send">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="transform: scaleX(-1) rotate(-45deg);">
@@ -556,6 +617,9 @@
     input.style.height = 'auto';
     sendBtn.disabled = true;
 
+    // Hide emoji picker if open
+    document.getElementById('aip-emoji-picker')?.classList.remove('show');
+
     addMessage(text, 'user');
     showTyping(true);
 
@@ -611,6 +675,8 @@
       const badge = document.getElementById('aip-badge');
       if (badge) badge.style.display = 'none';
       setTimeout(() => document.getElementById('aip-input')?.focus(), 250);
+    } else {
+      document.getElementById('aip-emoji-picker')?.classList.remove('show');
     }
   }
 
@@ -620,6 +686,21 @@
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/\n/g, '<br>');
+  }
+
+  function insertEmoji(emoji) {
+    const input = document.getElementById('aip-input');
+    if (!input) return;
+    const start = input.selectionStart || input.value.length;
+    const end = input.selectionEnd || input.value.length;
+    const val = input.value;
+    input.value = val.substring(0, start) + emoji + val.substring(end);
+    input.focus();
+    input.setSelectionRange(start + emoji.length, start + emoji.length);
+    
+    // Auto-resize
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 90) + 'px';
   }
 
   // =================== INIT ===================
@@ -636,6 +717,35 @@
     container.id = 'aip-widget';
     container.innerHTML = buildHTML();
     document.body.appendChild(container);
+
+    // Build Emoji Picker
+    const emojiPickerEl = document.getElementById('aip-emoji-picker');
+    if (emojiPickerEl) {
+      EMOJI_LIST.forEach(emoji => {
+        const item = document.createElement('span');
+        item.className = 'aip-emoji-item';
+        item.innerText = emoji;
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          insertEmoji(emoji);
+        });
+        emojiPickerEl.appendChild(item);
+      });
+    }
+
+    // Toggle Emoji Picker
+    const emojiBtn = document.getElementById('aip-emoji-btn');
+    emojiBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      emojiPickerEl?.classList.toggle('show');
+    });
+
+    // Close emoji picker when clicking outside
+    document.addEventListener('click', (e) => {
+      if (emojiPickerEl && !emojiPickerEl.contains(e.target) && e.target !== emojiBtn) {
+        emojiPickerEl.classList.remove('show');
+      }
+    });
 
     // Auto-restore history or add welcome message
     try {
