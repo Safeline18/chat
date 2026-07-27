@@ -202,6 +202,8 @@ router.post('/businesses', async (req, res) => {
       language: req.body.language || 'auto',
       knowledge_base: req.body.knowledge_base || [],
       escalation_email: req.body.escalation_email,
+      phone: req.body.phone,
+      whatsapp: req.body.whatsapp,
     };
 
     const b = await businesses.create(data);
