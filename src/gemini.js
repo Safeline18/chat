@@ -1,6 +1,7 @@
 // =====================================================
-// AI Agent Platform - Pure Gemini AI & RAG Engine
-// Primary Execution Engine: Gemini SDK + Direct REST API Fallback
+// AI Agent Platform - Pure Universal AI Engine
+// Multi-Provider AI Architecture: Gemini AI + Groq AI + OpenAI
+// Multi-Tenant RAG, Conversation Memory, Universal Dialects, Lead Capture, & Human Handoff.
 // =====================================================
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
@@ -52,23 +53,14 @@ function detectLanguageAndDialect(text) {
 }
 
 // =====================================================
-// DIRECT GEMINI REST API FALLBACK
-// Guaranteed execution even if SDK packaging has issues
+// DIRECT PROVIDERS (Gemini, Groq, OpenAI)
 // =====================================================
 async function callGeminiREST(apiKey, systemPrompt, sanitizedHistory, userMessage) {
   const contents = [];
-
   for (const h of sanitizedHistory) {
-    contents.push({
-      role: h.role,
-      parts: h.parts
-    });
+    contents.push({ role: h.role, parts: h.parts });
   }
-
-  contents.push({
-    role: 'user',
-    parts: [{ text: userMessage }]
-  });
+  contents.push({ role: 'user', parts: [{ text: userMessage }] });
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
 
@@ -78,10 +70,7 @@ async function callGeminiREST(apiKey, systemPrompt, sanitizedHistory, userMessag
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: systemPrompt }] },
       contents: contents,
-      generationConfig: {
-        temperature: 0.85,
-        maxOutputTokens: 1024
-      }
+      generationConfig: { temperature: 0.85, maxOutputTokens: 1024 }
     })
   });
 
@@ -94,6 +83,58 @@ async function callGeminiREST(apiKey, systemPrompt, sanitizedHistory, userMessag
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) throw new Error('Empty response from Gemini REST API');
   return text;
+}
+
+async function callGroqREST(apiKey, systemPrompt, sanitizedHistory, userMessage) {
+  const messages = [{ role: 'system', content: systemPrompt }];
+  for (const h of sanitizedHistory) {
+    messages.push({
+      role: h.role === 'model' ? 'assistant' : 'user',
+      content: h.parts[0]?.text || ''
+    });
+  }
+  messages.push({ role: 'user', content: userMessage });
+
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: messages,
+      temperature: 0.8,
+      max_tokens: 1024
+    })
+  });
+
+  if (!res.ok) throw new Error(`Groq HTTP ${res.status}`);
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content;
+}
+
+async function callOpenAIREST(apiKey, systemPrompt, sanitizedHistory, userMessage) {
+  const messages = [{ role: 'system', content: systemPrompt }];
+  for (const h of sanitizedHistory) {
+    messages.push({
+      role: h.role === 'model' ? 'assistant' : 'user',
+      content: h.parts[0]?.text || ''
+    });
+  }
+  messages.push({ role: 'user', content: userMessage });
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: messages,
+      temperature: 0.8,
+      max_tokens: 1024
+    })
+  });
+
+  if (!res.ok) throw new Error(`OpenAI HTTP ${res.status}`);
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content;
 }
 
 // =====================================================
@@ -232,17 +273,34 @@ async function generateResponse(business, conversationId, userMessage, channel =
     }
   }
 
-  // Method 2: Direct Gemini REST API fetch (guaranteed execution)
+  // Method 2: Direct Gemini REST API fetch
   if (!responseText && apiKey) {
     try {
-      console.log('⚡ Calling direct Gemini REST API...');
       responseText = await callGeminiREST(apiKey, systemPrompt, sanitizedHistory, userMessage);
     } catch (restErr) {
       console.warn('⚠️ Gemini REST API error:', restErr.message);
     }
   }
 
-  // Backup fallback if network is completely down
+  // Method 3: Groq AI API Fallback (Llama-3.3-70b)
+  if (!responseText && process.env.GROQ_API_KEY) {
+    try {
+      responseText = await callGroqREST(process.env.GROQ_API_KEY, systemPrompt, sanitizedHistory, userMessage);
+    } catch (gErr) {
+      console.warn('⚠️ Groq AI error:', gErr.message);
+    }
+  }
+
+  // Method 4: OpenAI API Fallback (gpt-4o-mini)
+  if (!responseText && process.env.OPENAI_API_KEY) {
+    try {
+      responseText = await callOpenAIREST(process.env.OPENAI_API_KEY, systemPrompt, sanitizedHistory, userMessage);
+    } catch (oErr) {
+      console.warn('⚠️ OpenAI error:', oErr.message);
+    }
+  }
+
+  // Method 5: Smart Domain Fallback (Offline Expert Engine)
   if (!responseText) {
     const { findKbFallback } = require('./gemini-fallback');
     responseText = findKbFallback(business, userMessage, detectedInfo.lang);
