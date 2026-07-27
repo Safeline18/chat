@@ -57,7 +57,7 @@ router.post('/webhook', async (req, res) => {
           }
 
           // Get or create conversation
-          const conv = convDb.getOrCreate(business.id, 'whatsapp', userPhone, {
+          const conv = await convDb.getOrCreate(business.id, 'whatsapp', userPhone, {
             name: customerName,
             phone: userPhone
           });

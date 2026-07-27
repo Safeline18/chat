@@ -83,7 +83,7 @@ async function handleFacebookMessages(body) {
       const senderName = await getFacebookUserName(senderId, business.page_access_token);
 
       // Get or create conversation
-      const conv = convDb.getOrCreate(business.id, 'facebook', senderId, { name: senderName });
+      const conv = await convDb.getOrCreate(business.id, 'facebook', senderId, { name: senderName });
 
       // Show typing indicator
       await sendFacebookTyping(pageId, senderId, business.page_access_token);
@@ -127,7 +127,7 @@ async function handleInstagramMessages(body) {
       const business = await findBusinessByPage(igAccountId, 'instagram');
       if (!business) continue;
 
-      const conv = convDb.getOrCreate(business.id, 'instagram', senderId, {});
+      const conv = await convDb.getOrCreate(business.id, 'instagram', senderId, {});
 
       // Generate response
       const response = await generateResponse(business, conv.id, messageText, 'instagram');

@@ -350,8 +350,83 @@ async function generateResponse(business, conversationId, userMessage, channel =
   return { text: responseText, language: detectedInfo.lang, dialect: detectedInfo.dialect, conversationId };
 }
 
+// =====================================================
+// STREAMING CHAT FUNCTION
+// =====================================================
+async function generateStreamingResponse(business, conversationId, userMessage, onChunk, channel = 'widget') {
+  if (!genAI) initGemini();
+
+  const { messages: msgDb, conversations: convDb, analytics } = require('./database');
+  const detectedInfo = detectLanguageAndDialect(userMessage);
+  const bizId = business._id || business.id;
+
+  let currentConv = null;
+  try { currentConv = await convDb.getById(conversationId); } catch (e) {}
+
+  let customerName = currentConv?.customer_name || '';
+
+  let sanitizedHistory = [];
+  try {
+    const rawHistory = await msgDb.getHistory(conversationId, 10);
+    let lastRole = null;
+    for (const msg of rawHistory) {
+      const role = msg.role === 'assistant' ? 'model' : 'user';
+      if (!msg.content || !msg.content.trim()) continue;
+      if (role !== lastRole) {
+        sanitizedHistory.push({ role, parts: [{ text: msg.content.trim() }] });
+        lastRole = role;
+      }
+    }
+    if (sanitizedHistory.length > 0 && sanitizedHistory[0].role !== 'user') sanitizedHistory.shift();
+    if (sanitizedHistory.length > 0 && sanitizedHistory[sanitizedHistory.length - 1].role === 'user') sanitizedHistory.pop();
+  } catch (e) {}
+
+  const systemPrompt = await buildRAGSystemPrompt(business, userMessage, detectedInfo, '', customerName, sanitizedHistory.length);
+
+  let fullResponse = '';
+
+  if (genAI) {
+    try {
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+        systemInstruction: systemPrompt,
+        generationConfig: { temperature: 0.85, topP: 0.95, maxOutputTokens: 1024 }
+      });
+
+      const chat = model.startChat({ history: sanitizedHistory });
+      const result = await chat.sendMessageStream(userMessage);
+
+      for await (const chunk of result.stream) {
+        const text = chunk.text();
+        if (text) {
+          fullResponse += text;
+          onChunk(text);
+        }
+      }
+    } catch (err) {
+      console.warn('⚠️ Streaming error, falling back to non-streaming:', err.message);
+    }
+  }
+
+  // Fallback to non-streaming if streaming failed
+  if (!fullResponse) {
+    const fallback = await generateResponse(business, conversationId, userMessage, channel);
+    fullResponse = fallback.text;
+    onChunk(fullResponse);
+    return;
+  }
+
+  // Save to MongoDB
+  try {
+    await msgDb.add(conversationId, 'user', userMessage, { channel, lang: detectedInfo.lang });
+    await msgDb.add(conversationId, 'assistant', fullResponse, { channel });
+    await convDb.updateLastMessage(conversationId, userMessage, detectedInfo.lang);
+    await analytics.track(bizId, 'message_sent', channel, { lang: detectedInfo.lang });
+  } catch (e) {}
+}
+
 function calculateTypingDelay(text) {
   return 200; // Ultra fast response delay (200ms)
 }
 
-module.exports = { initGemini, generateResponse, detectLanguageAndDialect, calculateTypingDelay, buildRAGSystemPrompt, callGeminiREST };
+module.exports = { initGemini, generateResponse, generateStreamingResponse, detectLanguageAndDialect, calculateTypingDelay, buildRAGSystemPrompt, callGeminiREST };

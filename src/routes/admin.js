@@ -7,20 +7,26 @@ const { businesses, integrations, conversations, messages, analytics } = require
 // Auth routes (unprotected)
 router.post('/login', async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const { adminDb } = require('../database');
-    const admin = await adminDb.getCredentials();
+    const { username, password } = req.body || {};
+    let admin = { username: 'admin', password: 'admin123' };
+    try {
+      const { adminDb } = require('../database');
+      admin = await adminDb.getCredentials();
+    } catch (e) {}
 
-    if ((username === admin.username || username === 'admin') && (password === admin.password || password === 'admin123')) {
+    const u = (username || '').trim();
+    const p = (password || '').trim();
+
+    if (u && p && ((u === admin.username || u === 'admin') && (p === admin.password || p === 'admin123'))) {
       return res.json({
         success: true,
-        token: `token_${admin.password}`,
-        user: { username: admin.username }
+        token: `token_${admin.password || 'admin123'}`,
+        user: { username: admin.username || 'admin' }
       });
     }
     return res.status(401).json({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'خطأ في السيرفر أثناء تسجيل الدخول' });
   }
 });
 
@@ -44,7 +50,9 @@ async function requireAuth(req, res, next) {
   const { adminDb } = require('../database');
   const admin = await adminDb.getCredentials();
 
-  if (token === process.env.ADMIN_SECRET || token === 'admin123' || token === admin.password || token === `token_${admin.password}`) {
+  const validTokens = [process.env.ADMIN_SECRET, 'admin123', admin.password, `token_${admin.password}`];
+
+  if (token && validTokens.includes(token)) {
     return next();
   }
   return res.status(401).json({ error: 'Unauthorized' });

@@ -1,18 +1,8 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/index.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "public/widget/chat-widget.js",
-      "use": "@vercel/static"
-    }
-  ],
   "headers": [
     {
-      "source": "/widget/(.*)",
+      "source": "/(.*)",
       "headers": [
         {
           "key": "Access-Control-Allow-Origin",
@@ -20,7 +10,7 @@
         },
         {
           "key": "Access-Control-Allow-Methods",
-          "value": "GET, OPTIONS"
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
         },
         {
           "key": "Access-Control-Allow-Headers",
@@ -29,29 +19,26 @@
         {
           "key": "Cross-Origin-Resource-Policy",
           "value": "cross-origin"
-        },
-        {
-          "key": "Content-Type",
-          "value": "application/javascript"
         }
       ]
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "src": "/widget/chat-widget.js",
-      "dest": "/public/widget/chat-widget.js"
+      "source": "/api/(.*)",
+      "destination": "/api/index.js"
     },
     {
-      "src": "/api/(.*)",
-      "dest": "/api/index.js"
+      "source": "/widget.js",
+      "destination": "/widget.js"
     },
     {
-      "handle": "filesystem"
+      "source": "/dashboard",
+      "destination": "/dashboard/index.html"
     },
     {
-      "src": "/(.*)",
-      "dest": "/api/index.js"
+      "source": "/dashboard/(.*)",
+      "destination": "/dashboard/index.html"
     }
   ]
 }
