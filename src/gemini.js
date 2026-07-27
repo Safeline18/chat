@@ -256,7 +256,7 @@ async function generateResponse(business, conversationId, userMessage, channel =
     if (sanitizedHistory.length > 0 && sanitizedHistory[sanitizedHistory.length - 1].role === 'user') sanitizedHistory.pop();
   } catch (e) {}
 
-  const systemPrompt = await buildRAGSystemPrompt(business, userMessage, detectedInfo);
+  const systemPrompt = await buildRAGSystemPrompt(business, userMessage, detectedInfo, '', customerName, sanitizedHistory.length);
 
   // Method 1: Try Gemini SDK
   if (genAI) {

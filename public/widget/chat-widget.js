@@ -850,6 +850,9 @@
 
       const data = await res.json();
       state.conversationId = data.conversationId;
+      if (data.conversationId) {
+        try { localStorage.setItem(`aip_conv_${BUSINESS_ID}`, data.conversationId); } catch(e) {}
+      }
 
       // Simulate natural typing delay
       const delay = Math.min(data.typing_delay || 800, 2000);
@@ -945,6 +948,28 @@
       const toggleBtn = document.getElementById('aip-theme-toggle');
       if (toggleBtn) toggleBtn.innerHTML = '🌙';
     }
+
+    // Auto-restore saved conversation session & history
+    try {
+      const savedConvId = localStorage.getItem(`aip_conv_${BUSINESS_ID}`);
+      if (savedConvId) {
+        state.conversationId = savedConvId;
+        fetch(`${SERVER_URL}/api/chat/history/${savedConvId}`)
+          .then(r => r.json())
+          .then(d => {
+            if (d && d.messages && d.messages.length > 0) {
+              const welcome = document.getElementById('aip-welcome');
+              const inputArea = document.getElementById('aip-input-area');
+              if (welcome) welcome.style.display = 'none';
+              if (inputArea) inputArea.style.display = 'flex';
+              d.messages.forEach(m => {
+                addMessage(m.content, m.role === 'assistant' ? 'assistant' : 'user');
+              });
+            }
+          })
+          .catch(() => {});
+      }
+    } catch (e) {}
 
     // Event: Toggle
     document.getElementById('aip-toggle')?.addEventListener('click', toggle);
