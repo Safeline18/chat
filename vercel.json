@@ -4,6 +4,10 @@
     {
       "src": "api/index.js",
       "use": "@vercel/node"
+    },
+    {
+      "src": "public/widget/chat-widget.js",
+      "use": "@vercel/static"
     }
   ],
   "headers": [
@@ -25,14 +29,25 @@
         {
           "key": "Cross-Origin-Resource-Policy",
           "value": "cross-origin"
+        },
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
         }
       ]
     }
   ],
   "routes": [
     {
-      "src": "/widget/(.*)",
-      "dest": "/widget/$1"
+      "src": "/widget/chat-widget.js",
+      "dest": "/public/widget/chat-widget.js"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.js"
+    },
+    {
+      "handle": "filesystem"
     },
     {
       "src": "/(.*)",
