@@ -46,6 +46,7 @@ const socketAllowedOrigins = process.env.ALLOWED_ORIGINS
       'https://www.safelinescc.sa',
       'https://safelinescc.sa',
     'https://www.eellaawedding.com',
+    'https://www.ruaadalraqamia.com',
       'https://chat-eta-gray.vercel.app'
     ];
 
