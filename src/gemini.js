@@ -246,6 +246,18 @@ async function generateResponse(business, conversationId, userMessage, channel =
   const { messages: msgDb, conversations: convDb, leads: leadDb, analytics } = require('./database');
   const detectedInfo = detectLanguageAndDialect(userMessage);
   const bizId = business._id || business.id;
+  
+  let waUrl = null;
+  const waNumber = business.whatsapp || business.phone;
+  if (waNumber) {
+    let cleanNumber = waNumber.replace(/[\s\+\-\(\)]/g, '');
+    if (cleanNumber.startsWith('05') && cleanNumber.length === 10) {
+      cleanNumber = '966' + cleanNumber.substring(1);
+    } else if (cleanNumber.startsWith('5') && cleanNumber.length === 9) {
+      cleanNumber = '966' + cleanNumber;
+    }
+    waUrl = `https://wa.me/${cleanNumber}`;
+  }
   const gp1 = 'AQ.Ab8RN6K_VJ';
   const gp2 = 'c0Q6vP442R95LjF-Kje7egHchce-L-0yxwDbNKSg';
   const apiKey = process.env.GEMINI_API_KEY || (gp1 + gp2);
