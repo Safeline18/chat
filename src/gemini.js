@@ -1,7 +1,6 @@
 // =====================================================
 // AI Agent Platform - Pure Gemini AI & RAG Engine
-// Handles: Multi-Tenant RAG, Conversation Memory, Universal Dialects,
-// Context Continuity, Lead Capture, & Human Handoff.
+// Primary Execution Engine: Gemini SDK + Direct REST API Fallback
 // =====================================================
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
@@ -53,6 +52,51 @@ function detectLanguageAndDialect(text) {
 }
 
 // =====================================================
+// DIRECT GEMINI REST API FALLBACK
+// Guaranteed execution even if SDK packaging has issues
+// =====================================================
+async function callGeminiREST(apiKey, systemPrompt, sanitizedHistory, userMessage) {
+  const contents = [];
+
+  for (const h of sanitizedHistory) {
+    contents.push({
+      role: h.role,
+      parts: h.parts
+    });
+  }
+
+  contents.push({
+    role: 'user',
+    parts: [{ text: userMessage }]
+  });
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: contents,
+      generationConfig: {
+        temperature: 0.85,
+        maxOutputTokens: 1024
+      }
+    })
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini REST API HTTP ${res.status}: ${errText}`);
+  }
+
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error('Empty response from Gemini REST API');
+  return text;
+}
+
+// =====================================================
 // RAG & SYSTEM PROMPT BUILDER
 // =====================================================
 async function buildRAGSystemPrompt(business, userMessage, detectedInfo, conversationSummary = '') {
@@ -63,7 +107,6 @@ async function buildRAGSystemPrompt(business, userMessage, detectedInfo, convers
   const businessName = business.name_ar || business.name;
   const businessDesc = business.description_ar || business.description;
 
-  // Retrieve top relevant RAG chunks for business
   const relevantChunks = await chunkDb.searchRelevant(bizId, userMessage, 6);
 
   let ragContext = '';
@@ -74,7 +117,6 @@ async function buildRAGSystemPrompt(business, userMessage, detectedInfo, convers
     }).join('\n\n---\n\n');
   }
 
-  // Parse manual Knowledge Base JSON if present
   let manualKbText = '';
   try {
     const kb = typeof business.knowledge_base === 'string' ? JSON.parse(business.knowledge_base || '[]') : (business.knowledge_base || []);
@@ -125,6 +167,7 @@ async function generateResponse(business, conversationId, userMessage, channel =
   const { messages: msgDb, conversations: convDb, leads: leadDb, analytics } = require('./database');
   const detectedInfo = detectLanguageAndDialect(userMessage);
   const bizId = business._id || business.id;
+  const apiKey = process.env.GEMINI_API_KEY;
 
   let responseText = null;
 
@@ -137,37 +180,28 @@ async function generateResponse(business, conversationId, userMessage, channel =
     } catch (e) {}
   }
 
+  // Retrieve recent conversation history & sanitize roles
+  let sanitizedHistory = [];
+  try {
+    const rawHistory = await msgDb.getHistory(conversationId, 15);
+    let lastRole = null;
+    for (const msg of rawHistory) {
+      const role = msg.role === 'assistant' ? 'model' : 'user';
+      if (!msg.content || !msg.content.trim()) continue;
+      if (role !== lastRole) {
+        sanitizedHistory.push({ role, parts: [{ text: msg.content.trim() }] });
+        lastRole = role;
+      }
+    }
+    if (sanitizedHistory.length > 0 && sanitizedHistory[0].role !== 'user') sanitizedHistory.shift();
+    if (sanitizedHistory.length > 0 && sanitizedHistory[sanitizedHistory.length - 1].role === 'user') sanitizedHistory.pop();
+  } catch (e) {}
+
+  const systemPrompt = await buildRAGSystemPrompt(business, userMessage, detectedInfo);
+
+  // Method 1: Try Gemini SDK
   if (genAI) {
     try {
-      // Retrieve recent conversation history & sanitize roles to strictly alternate (user -> model -> user -> model)
-      const rawHistory = await msgDb.getHistory(conversationId, 15);
-      const sanitizedHistory = [];
-      let lastRole = null;
-
-      for (const msg of rawHistory) {
-        const role = msg.role === 'assistant' ? 'model' : 'user';
-        if (!msg.content || !msg.content.trim()) continue;
-
-        if (role !== lastRole) {
-          sanitizedHistory.push({
-            role: role,
-            parts: [{ text: msg.content.trim() }]
-          });
-          lastRole = role;
-        }
-      }
-
-      // Ensure history starts with 'user' and ends with 'model' so startChat is 100% valid
-      if (sanitizedHistory.length > 0 && sanitizedHistory[0].role !== 'user') {
-        sanitizedHistory.shift();
-      }
-      if (sanitizedHistory.length > 0 && sanitizedHistory[sanitizedHistory.length - 1].role === 'user') {
-        sanitizedHistory.pop();
-      }
-
-      // Build RAG System Prompt
-      const systemPrompt = await buildRAGSystemPrompt(business, userMessage, detectedInfo);
-
       const candidateModels = [
         'gemini-flash-latest',
         'gemini-pro-latest',
@@ -182,11 +216,7 @@ async function generateResponse(business, conversationId, userMessage, channel =
           const model = genAI.getGenerativeModel({
             model: modelName,
             systemInstruction: systemPrompt,
-            generationConfig: {
-              temperature: 0.85,
-              topP: 0.95,
-              maxOutputTokens: 1024
-            }
+            generationConfig: { temperature: 0.85, topP: 0.95, maxOutputTokens: 1024 }
           });
 
           const chat = model.startChat({ history: sanitizedHistory });
@@ -194,21 +224,31 @@ async function generateResponse(business, conversationId, userMessage, channel =
           responseText = result.response.text();
           if (responseText) break;
         } catch (mErr) {
-          console.warn(`Model ${modelName} retry:`, mErr.message);
+          // Model retry
         }
       }
     } catch (err) {
-      console.warn('⚠️ Gemini execution warning:', err.message);
+      console.warn('⚠️ Gemini SDK attempt error:', err.message);
     }
   }
 
-  // Backup fallback if API key is not connected or limit hit
+  // Method 2: Direct Gemini REST API fetch (guaranteed execution)
+  if (!responseText && apiKey) {
+    try {
+      console.log('⚡ Calling direct Gemini REST API...');
+      responseText = await callGeminiREST(apiKey, systemPrompt, sanitizedHistory, userMessage);
+    } catch (restErr) {
+      console.warn('⚠️ Gemini REST API error:', restErr.message);
+    }
+  }
+
+  // Backup fallback if network is completely down
   if (!responseText) {
     const { findKbFallback } = require('./gemini-fallback');
     responseText = findKbFallback(business, userMessage, detectedInfo.lang);
   }
 
-  // Auto Lead Detection: check if user provided phone number in message
+  // Auto Lead Detection
   const phoneMatch = userMessage.match(/(?:\+?966|0)?5\d{8}|\+?\d{10,14}/);
   if (phoneMatch) {
     try {
@@ -238,4 +278,4 @@ function calculateTypingDelay(text) {
   return Math.max(300, baseDelay);
 }
 
-module.exports = { initGemini, generateResponse, detectLanguageAndDialect, calculateTypingDelay, buildRAGSystemPrompt };
+module.exports = { initGemini, generateResponse, detectLanguageAndDialect, calculateTypingDelay, buildRAGSystemPrompt, callGeminiREST };
