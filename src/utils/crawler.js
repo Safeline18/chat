@@ -49,7 +49,7 @@ function extractLinks(html, baseUrl) {
       const urlObj = new URL(fullUrl);
       const host = urlObj.hostname.replace(/^www\./, '');
 
-      if (host === baseDomain && !/\.(jpg|png|gif|pdf|css|js|zip|svg|ico)$/i.test(urlObj.pathname)) {
+      if (host === baseDomain && !/\.(jpg|png|gif|pdf|css|js|zip|svg|ico|woff|woff2|ttf|otf|eot|map|json)$/i.test(urlObj.pathname)) {
         links.add(fullUrl);
       }
     } catch (e) {}
