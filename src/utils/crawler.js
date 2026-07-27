@@ -155,9 +155,15 @@ async function processWebsiteAndGenerateRAG(baseUrl, businessId) {
   const allTextChunks = [];
   const rawCombinedText = pages.map(p => `--- PAGE: ${p.title} (${p.url}) ---\n${p.text}`).join('\n\n');
 
-  // Extract contacts from combined text
+  // Extract contacts & social media links from combined text
   const emails = rawCombinedText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || [];
   const phones = rawCombinedText.match(/(?:\+?966|0)?5\d{8}|\+?\d{10,14}/g) || [];
+  const socialMatches = rawCombinedText.match(/(?:https?:\/\/)?(?:www\.)?(?:instagram\.com|facebook\.com|twitter\.com|x\.com|tiktok\.com|linkedin\.com|youtube\.com|snapchat\.com|wa\.me)\/[a-zA-Z0-9_.-]+/gi) || [];
+  const uniqueSocials = [...new Set(socialMatches)];
+
+  const addressLines = rawCombinedText.split('\n').filter(line =>
+    /شارع|حي|طريق|مبنى|فرع|مكة|الرياض|جدة|دبي|القاهرة|الدمام|المناطق|address|street|building|city|location/i.test(line)
+  ).slice(0, 8);
 
   // Create Knowledge Chunks for each page
   for (const p of pages) {
@@ -174,7 +180,7 @@ async function processWebsiteAndGenerateRAG(baseUrl, businessId) {
             source_url: p.url,
             page_title: p.title,
             content_type: contentType,
-            language: 'ar',
+            doc_lang: 'ar',
             content: currentChunk.trim(),
             keywords: currentChunk.toLowerCase().split(/\s+/).filter(w => w.length > 3).slice(0, 10)
           });
@@ -190,11 +196,36 @@ async function processWebsiteAndGenerateRAG(baseUrl, businessId) {
         source_url: p.url,
         page_title: p.title,
         content_type: contentType,
-        language: 'ar',
+        doc_lang: 'ar',
         content: currentChunk.trim(),
         keywords: currentChunk.toLowerCase().split(/\s+/).filter(w => w.length > 3).slice(0, 10)
       });
     }
+  }
+
+  // Add Social Media & Address Chunks
+  if (uniqueSocials.length > 0) {
+    allTextChunks.push({
+      business_id: businessId,
+      source_url: baseUrl,
+      page_title: 'حسابات التواصل الاجتماعي والمعلومات المباشرة',
+      content_type: 'contact',
+      doc_lang: 'ar',
+      content: `روابط التواصل الاجتماعي الرسمية:\n${uniqueSocials.join('\n')}`,
+      keywords: ['تواصل', 'انستغرام', 'تويتر', 'سناب', 'فيسبوك', 'واتساب']
+    });
+  }
+
+  if (addressLines.length > 0) {
+    allTextChunks.push({
+      business_id: businessId,
+      source_url: baseUrl,
+      page_title: 'الفروع والعناوين والمواقع الجغرافية',
+      content_type: 'branches',
+      doc_lang: 'ar',
+      content: `العناوين والمواقع الجغرافية المسجلة:\n${addressLines.join('\n')}`,
+      keywords: ['عنوان', 'فرع', 'موقع', 'مدينة', 'شارع']
+    });
   }
 
   // Clear previous chunks & save new RAG chunks to MongoDB

@@ -98,13 +98,13 @@ const KnowledgeChunkSchema = new mongoose.Schema({
   source_url: String,
   page_title: String,
   content_type: { type: String, default: 'general' }, // services, pricing, faq, branches, policies, manual
-  language: { type: String, default: 'ar' },
+  doc_lang: { type: String, default: 'ar' },
   content: { type: String, required: true },
   keywords: [String]
 }, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
 
 KnowledgeChunkSchema.index({ business_id: 1, content_type: 1 });
-KnowledgeChunkSchema.index({ business_id: 1, content: 'text' });
+KnowledgeChunkSchema.index({ business_id: 1, content: 'text' }, { default_language: 'none', language_override: 'none' });
 
 const LeadSchema = new mongoose.Schema({
   _id: { type: String, default: uuidv4 },
