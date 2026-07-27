@@ -5,39 +5,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Agent Platform - لوحة التحكم</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
   <style>
     :root {
-      --bg-primary: #0a0a0f;
-      --bg-secondary: #111118;
-      --bg-card: #16161f;
-      --bg-card-hover: #1d1d2a;
-      --border: rgba(255,255,255,0.07);
-      --border-active: rgba(108, 99, 255, 0.5);
-      --text-primary: #f0f0f8;
-      --text-secondary: #8888aa;
-      --text-muted: #5555777;
-      --accent: #6C63FF;
-      --accent-hover: #7c74ff;
-      --accent-glow: rgba(108, 99, 255, 0.3);
-      --teal: #4ECDC4;
-      --green: #00E676;
-      --orange: #FF9800;
-      --red: #FF4444;
-      --gradient: linear-gradient(135deg, #6C63FF 0%, #4ECDC4 100%);
+      --bg-primary: #EBF2FC;
+      --bg-secondary: #FFFFFF;
+      --bg-card: #F8F9FB;
+      --bg-card-hover: #FFFFFF;
+      --border: rgba(26, 31, 54, 0.08);
+      --border-active: #C5A059;
+      --text-primary: #1A1F36;
+      --text-secondary: #64748B;
+      --text-muted: #94A3B8;
+      --accent: #1A1F36;
+      --accent-hover: #2B3356;
+      --accent-glow: rgba(26, 31, 54, 0.12);
+      --teal: #C5A059;
+      --green: #10B981;
+      --orange: #F59E0B;
+      --red: #EF4444;
+      --gradient: linear-gradient(135deg, #1A1F36 0%, #C5A059 100%);
       --sidebar-width: 260px;
       --header-height: 64px;
       --radius: 14px;
       --radius-sm: 8px;
-      --shadow: 0 8px 32px rgba(0,0,0,0.4);
+      --shadow: 0 6px 24px rgba(26, 31, 54, 0.04);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Cairo', 'Inter', sans-serif;
+      font-family: 'Cairo', 'IBM Plex Sans', sans-serif;
       background: var(--bg-primary);
       color: var(--text-primary);
       min-height: 100vh;
@@ -128,13 +128,13 @@
 
     .nav-item:hover {
       color: var(--text-primary);
-      background: rgba(108, 99, 255, 0.08);
+      background: rgba(26, 31, 54, 0.06);
     }
 
     .nav-item.active {
-      color: var(--accent);
-      background: rgba(108, 99, 255, 0.12);
-      border-right-color: var(--accent);
+      color: var(--teal);
+      background: rgba(197, 160, 89, 0.1);
+      border-right-color: var(--teal);
     }
 
     .nav-item i {
@@ -1546,7 +1546,7 @@ async function api(path, method = 'GET', body = null) {
 function addToLiveFeed(data) {
   const feed = document.getElementById('liveFeed');
   const channelIcons = {
-    widget: { icon: '💻', color: '#6C63FF', bg: 'rgba(108,99,255,0.15)' },
+    widget: { icon: '💻', color: '#1A1F36', bg: 'rgba(26,31,54,0.12)' },
     whatsapp: { icon: '📱', color: '#25D366', bg: 'rgba(37,211,102,0.15)' },
     facebook: { icon: '📘', color: '#1877F2', bg: 'rgba(24,119,242,0.15)' },
     instagram: { icon: '📸', color: '#E1306C', bg: 'rgba(225,48,108,0.15)' },
@@ -1623,7 +1623,7 @@ async function loadOverview() {
     (data.byChannel || []).forEach(c => { channels[c.channel] = c.count; });
     const max = Math.max(...Object.values(channels), 1);
     const channelNames = { widget: '🌐 الموقع', whatsapp: '📱 واتساب', facebook: '📘 فيسبوك', instagram: '📸 إنستغرام' };
-    const colors = { widget: '#6C63FF', whatsapp: '#25D366', facebook: '#1877F2', instagram: '#E1306C' };
+    const colors = { widget: '#1A1F36', whatsapp: '#25D366', facebook: '#1877F2', instagram: '#E1306C' };
 
     document.getElementById('channelChart').innerHTML = Object.entries(channels).map(([ch, val]) => `
       <div class="chart-bar-item">
@@ -1669,7 +1669,7 @@ function renderBusinesses(bizs) {
     const isActive = b.is_active === 1;
     return `
       <div class="business-card" onclick="editBusiness('${bizId}')">
-        <div class="business-card-accent" style="background:linear-gradient(90deg, ${b.primary_color}, ${b.secondary_color || '#4ECDC4'});"></div>
+        <div class="business-card-accent" style="background:linear-gradient(90deg, ${b.primary_color}, ${b.secondary_color || '#C5A059'});"></div>
         <div class="business-header">
           <div class="business-avatar" style="background:${b.primary_color}22; color:${b.primary_color};">${emoji}</div>
           <div class="business-info">
@@ -1680,7 +1680,7 @@ function renderBusinesses(bizs) {
         </div>
         <div class="business-channels">
           <span class="channel-badge channel-widget">💻 ويدجت</span>
-          ${b.scanned_pages_count ? `<span class="business-badge" style="background:rgba(108,99,255,0.15);color:var(--accent);border:1px solid rgba(108,99,255,0.3);font-size:11px;padding:3px 10px;border-radius:20px;">📄 ${b.scanned_pages_count} صفحة RAG</span>` : ''}
+          ${b.scanned_pages_count ? `<span class="business-badge" style="background:rgba(26,31,54,0.12);color:var(--accent);border:1px solid rgba(26,31,54,0.25);font-size:11px;padding:3px 10px;border-radius:20px;">📄 ${b.scanned_pages_count} صفحة RAG</span>` : ''}
           ${b.industry ? `<span class="business-badge" style="background:${b.primary_color}15;color:${b.primary_color};border:1px solid ${b.primary_color}30;font-size:11px;padding:3px 10px;border-radius:20px;">${escHtml(b.industry)}</span>` : ''}
         </div>
         <div style="display:flex;gap:8px;margin-top:14px;">
@@ -1699,7 +1699,7 @@ function renderBusinesses(bizs) {
   }).join('');
 
   grid.innerHTML = `
-    <div class="add-business-card" style="background:linear-gradient(135deg, rgba(108,99,255,0.12), rgba(78,205,196,0.12));border:2px dashed var(--accent);" onclick="quickCreateFromUrl()">
+    <div class="add-business-card" style="background:linear-gradient(135deg, rgba(26,31,54,0.08), rgba(197,160,89,0.08));border:2px dashed var(--accent);" onclick="quickCreateFromUrl()">
       <i class="fas fa-magic" style="font-size:36px;color:var(--accent);margin-bottom:12px;"></i>
       <span style="font-weight:800;font-size:15px;color:var(--text-primary);">🚀 إنشاء بنقرة واحدة برابط الموقع</span>
       <span style="font-size:11px;color:var(--text-secondary);margin-top:6px;text-align:center;">سحب وقراءة كافة صفحات الموقع ومحتواها تلقائياً 100%</span>
@@ -1756,7 +1756,7 @@ function renderConvList(convs) {
     return;
   }
 
-  const channelColors = { widget: '#6C63FF', whatsapp: '#25D366', facebook: '#1877F2', instagram: '#E1306C' };
+  const channelColors = { widget: '#1A1F36', whatsapp: '#25D366', facebook: '#1877F2', instagram: '#E1306C' };
   const channelIcons = { widget: '💻', whatsapp: '📱', facebook: '📘', instagram: '📸' };
 
   container.innerHTML = convs.map(c => `
@@ -1787,12 +1787,12 @@ async function selectConversation(id) {
     const data = await api(`/api/admin/conversations/${id}/messages`);
     const viewer = document.querySelector('.conv-viewer');
 
-    const channelColors = { widget: '#6C63FF', whatsapp: '#25D366', facebook: '#1877F2', instagram: '#E1306C' };
+    const channelColors = { widget: '#1A1F36', whatsapp: '#25D366', facebook: '#1877F2', instagram: '#E1306C' };
     const conv = data.conversation;
 
     viewer.innerHTML = `
       <div class="conv-viewer-header">
-        <div style="width:36px;height:36px;border-radius:50%;background:rgba(108,99,255,0.15);display:flex;align-items:center;justify-content:center;font-size:16px;">👤</div>
+        <div style="width:36px;height:36px;border-radius:50%;background:rgba(26,31,54,0.12);display:flex;align-items:center;justify-content:center;font-size:16px;">👤</div>
         <div>
           <div style="font-size:14px;font-weight:700;">${escHtml(state.selectedConv?.customer_name || 'عميل')}</div>
           <div style="font-size:12px;color:var(--text-secondary);">${conv.channel} • ${conv.language || 'auto'}</div>
@@ -1870,8 +1870,8 @@ async function editBusiness(id) {
     document.getElementById('biz-desc').value = b.description || '';
     document.getElementById('biz-industry').value = b.industry || 'general';
     document.getElementById('biz-language').value = b.language || 'auto';
-    document.getElementById('biz-color').value = b.primary_color || '#6C63FF';
-    document.getElementById('biz-color-text').value = b.primary_color || '#6C63FF';
+    document.getElementById('biz-color').value = b.primary_color || '#1A1F36';
+    document.getElementById('biz-color-text').value = b.primary_color || '#1A1F36';
     document.getElementById('biz-email').value = b.escalation_email || '';
     document.getElementById('biz-whatsapp').value = b.whatsapp || '';
     document.getElementById('biz-phone').value = b.phone || '';
@@ -1896,8 +1896,8 @@ function clearBizForm() {
   });
   document.getElementById('biz-industry').value = 'general';
   document.getElementById('biz-language').value = 'auto';
-  document.getElementById('biz-color').value = '#6C63FF';
-  document.getElementById('biz-color-text').value = '#6C63FF';
+  document.getElementById('biz-color').value = '#1A1F36';
+  document.getElementById('biz-color-text').value = '#1A1F36';
   state.kbItems = [];
   renderKbItems();
 }
@@ -2053,7 +2053,7 @@ async function loadIntegrations() {
         <!-- WIDGET -->
         <div class="integration-card connected">
           <div class="integration-header">
-            <div class="integration-icon" style="background:rgba(108,99,255,0.15);color:#6C63FF;font-size:22px;">💻</div>
+            <div class="integration-icon" style="background:rgba(26,31,54,0.12);color:#1A1F36;font-size:22px;">💻</div>
             <div class="integration-info">
               <h3>Chat Widget</h3>
               <p>ويدجت المحادثة للمواقع</p>
@@ -2092,7 +2092,7 @@ async function loadIntegrations() {
           <button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%;" onclick="openIntModal('whatsapp','${bizId}')">
             <i class="fas fa-cog"></i> إعداد بيانات WhatsApp
           </button>
-          <button class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;background:rgba(108,99,255,0.1);color:#6C63FF;border:1px solid rgba(108,99,255,0.3);" onclick="showChannelGuide('whatsapp')">
+          <button class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;background:rgba(26,31,54,0.08);color:#1A1F36;border:1px solid rgba(26,31,54,0.2);" onclick="showChannelGuide('whatsapp')">
             <i class="fas fa-book"></i> 📖 دليل التفعيل الخطوة بخطوة
           </button>
         </div>
@@ -2117,7 +2117,7 @@ async function loadIntegrations() {
           <button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%;" onclick="openIntModal('facebook','${bizId}')">
             <i class="fas fa-cog"></i> إعداد بيانات Facebook
           </button>
-          <button class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;background:rgba(108,99,255,0.1);color:#6C63FF;border:1px solid rgba(108,99,255,0.3);" onclick="showChannelGuide('facebook')">
+          <button class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;background:rgba(26,31,54,0.08);color:#1A1F36;border:1px solid rgba(26,31,54,0.2);" onclick="showChannelGuide('facebook')">
             <i class="fas fa-book"></i> 📖 دليل التفعيل الخطوة بخطوة
           </button>
         </div>
@@ -2142,7 +2142,7 @@ async function loadIntegrations() {
           <button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%;" onclick="openIntModal('instagram','${bizId}')">
             <i class="fas fa-cog"></i> إعداد بيانات Instagram
           </button>
-          <button class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;background:rgba(108,99,255,0.1);color:#6C63FF;border:1px solid rgba(108,99,255,0.3);" onclick="showChannelGuide('instagram')">
+          <button class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;background:rgba(26,31,54,0.08);color:#1A1F36;border:1px solid rgba(26,31,54,0.2);" onclick="showChannelGuide('instagram')">
             <i class="fas fa-book"></i> 📖 دليل التفعيل الخطوة بخطوة
           </button>
         </div>
@@ -2167,7 +2167,7 @@ async function loadIntegrations() {
           <button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%;" onclick="openIntModal('tiktok','${bizId}')">
             <i class="fas fa-cog"></i> إعداد بيانات TikTok
           </button>
-          <button class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;background:rgba(108,99,255,0.1);color:#6C63FF;border:1px solid rgba(108,99,255,0.3);" onclick="showChannelGuide('tiktok')">
+          <button class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;background:rgba(26,31,54,0.08);color:#1A1F36;border:1px solid rgba(26,31,54,0.2);" onclick="showChannelGuide('tiktok')">
             <i class="fas fa-book"></i> 📖 دليل التفعيل الخطوة بخطوة
           </button>
         </div>
@@ -2668,7 +2668,7 @@ document.getElementById('convSearch').addEventListener('input', function() {
     }
 
     const statusEl = document.getElementById('pdfUploadStatus');
-    if (statusEl) statusEl.innerHTML = `<span style="color:#6C63FF;"><i class="fas fa-spinner fa-spin"></i> جاري قراءة وتدريب ملف الـ PDF...</span>`;
+    if (statusEl) statusEl.innerHTML = `<span style="color:var(--accent);"><i class="fas fa-spinner fa-spin"></i> جاري قراءة وتدريب ملف الـ PDF...</span>`;
 
     const formData = new FormData();
     formData.append('pdf', file);

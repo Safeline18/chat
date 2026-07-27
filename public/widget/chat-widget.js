@@ -21,8 +21,8 @@
     agent_name_ar: 'آريا',
     welcome_message: 'Hello! How can I help you today? 😊',
     welcome_message_ar: 'أهلاً! كيف يمكنني مساعدتك اليوم؟ 😊',
-    primary_color: '#6C63FF',
-    secondary_color: '#4ECDC4',
+    primary_color: '#1A1F36',
+    secondary_color: '#C5A059',
     avatar_url: null,
   };
 
@@ -47,11 +47,19 @@
     return getUserLang() === 'ar' ? (ar || en) : en;
   }
 
+  function hexToRgb(hex) {
+    if (!hex) return '26, 31, 54';
+    const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
+    const fullHex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(fullHex);
+    return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '26, 31, 54';
+  }
+
   // =================== STYLES ===================
   const styles = `
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
 
-    #aip-widget * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', 'Outfit', sans-serif; }
+    #aip-widget * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', 'IBM Plex Sans', sans-serif; }
 
     #aip-widget {
       position: fixed;
@@ -68,19 +76,19 @@
       border: none;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 12px 36px rgba(79, 70, 229, 0.35), 0 0 0 0 rgba(124, 58, 237, 0.4);
+      box-shadow: 0 12px 36px rgba(var(--aip-color-rgb, 26, 31, 54), 0.35), 0 0 0 0 rgba(var(--aip-secondary-rgb, 197, 160, 89), 0.4);
       transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
       position: relative;
       animation: aip-pulse 3s infinite;
       outline: none;
     }
 
-    #aip-toggle:hover { transform: scale(1.08) rotate(4deg); box-shadow: 0 16px 45px rgba(79, 70, 229, 0.45); }
+    #aip-toggle:hover { transform: scale(1.08) rotate(4deg); box-shadow: 0 16px 45px rgba(var(--aip-color-rgb, 26, 31, 54), 0.45); }
     #aip-toggle:active { transform: scale(0.94); }
 
     @keyframes aip-pulse {
-      0%, 100% { box-shadow: 0 12px 36px rgba(79, 70, 229, 0.35), 0 0 0 0 rgba(124, 58, 237, 0.4); }
-      50% { box-shadow: 0 12px 36px rgba(79, 70, 229, 0.35), 0 0 0 12px rgba(124, 58, 237, 0); }
+      0%, 100% { box-shadow: 0 12px 36px rgba(var(--aip-color-rgb, 26, 31, 54), 0.35), 0 0 0 0 rgba(var(--aip-secondary-rgb, 197, 160, 89), 0.4); }
+      50% { box-shadow: 0 12px 36px rgba(var(--aip-color-rgb, 26, 31, 54), 0.35), 0 0 0 12px rgba(var(--aip-secondary-rgb, 197, 160, 89), 0); }
     }
 
     .aip-toggle-icon { font-size: 28px; transition: all 0.3s ease; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); }
@@ -110,12 +118,12 @@
       width: 390px;
       height: 600px;
       background: #FFFFFF;
-      color: #0F172A;
+      color: #1A1F36;
       border-radius: 24px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 25px 60px -12px rgba(26, 31, 54, 0.15), 0 0 0 1px rgba(26, 31, 54, 0.04);
       transform: scale(0.92) translateY(24px);
       opacity: 0;
       pointer-events: none;
@@ -138,14 +146,14 @@
       position: relative;
       overflow: hidden;
       flex-shrink: 0;
-      background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #06B6D4 100%);
-      box-shadow: 0 4px 20px rgba(79, 70, 229, 0.25);
+      background: linear-gradient(135deg, var(--aip-color, #1A1F36) 0%, var(--aip-secondary, #C5A059) 100%);
+      box-shadow: 0 4px 20px rgba(var(--aip-color-rgb, 26, 31, 54), 0.2);
     }
 
     .aip-header-glow {
       position: absolute;
       inset: 0;
-      opacity: 0.2;
+      opacity: 0.15;
       background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.4), transparent);
     }
 
@@ -154,11 +162,11 @@
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-size: 22px;
-      background: rgba(255,255,255,0.2);
-      border: 2px solid rgba(255,255,255,0.35);
+      background: rgba(255,255,255,0.15);
+      border: 2px solid rgba(255,255,255,0.25);
       flex-shrink: 0;
       overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
     .aip-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -189,8 +197,8 @@
 
     .aip-close-btn {
       width: 34px; height: 34px;
-      background: rgba(255,255,255,0.2);
-      border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.2);
       border-radius: 50%;
       color: white;
       cursor: pointer;
@@ -201,7 +209,7 @@
       backdrop-filter: blur(4px);
     }
 
-    .aip-close-btn:hover { background: rgba(255,255,255,0.35); transform: scale(1.08); }
+    .aip-close-btn:hover { background: rgba(255,255,255,0.3); transform: scale(1.08); }
 
     /* MESSAGES (LIGHT DEFAULT) */
     #aip-messages {
@@ -211,18 +219,18 @@
       display: flex;
       flex-direction: column;
       gap: 12px;
-      background: #FAFAFC;
+      background: #F0F4FA;
     }
 
     .aip-msg-avatar-sm {
       width: 32px; height: 32px;
       border-radius: 50%;
-      background: rgba(79, 70, 229, 0.1);
+      background: rgba(var(--aip-color-rgb, 26, 31, 54), 0.1);
       display: flex; align-items: center; justify-content: center;
       font-size: 16px;
       flex-shrink: 0;
       overflow: hidden;
-      border: 1px solid rgba(79, 70, 229, 0.2);
+      border: 1px solid rgba(var(--aip-color-rgb, 26, 31, 54), 0.15);
     }
 
     .aip-bubble {
@@ -239,39 +247,105 @@
 
     .aip-bubble-bot {
       background: #FFFFFF;
-      color: #1E293B;
+      color: #1A1F36;
       border: 1px solid #E2E8F0;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.03);
+      box-shadow: 0 4px 14px rgba(0,0,0,0.02);
       border-bottom-left-radius: 4px;
     }
 
     .aip-bubble-user {
-      background: linear-gradient(135deg, #4F46E5, #7C3AED);
+      background: var(--aip-color, #1A1F36);
       color: white;
-      box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+      box-shadow: 0 4px 15px rgba(var(--aip-color-rgb, 26, 31, 54), 0.25);
       border-bottom-right-radius: 4px;
+    }
+
+    /* ACTION BUTTONS IN CHAT */
+    .aip-btn-container {
+      margin: 10px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
     .aip-wa-btn {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 8px;
-      background: linear-gradient(135deg, #10B981, #059669);
+      background: linear-gradient(135deg, #25D366, #128C7E);
       color: white !important;
-      padding: 11px 20px;
+      padding: 12px 20px;
       border-radius: 30px;
       text-decoration: none !important;
       font-weight: 700;
       font-size: 14px;
-      margin: 10px 0 4px 0;
-      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+      box-shadow: 0 6px 20px rgba(37, 211, 102, 0.35);
       transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      width: 100%;
+      text-align: center;
     }
+    .aip-wa-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 10px 25px rgba(37, 211, 102, 0.45); }
 
-    .aip-wa-btn:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 10px 25px rgba(16, 185, 129, 0.45); }
+    .aip-form-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #3B82F6, #1D4ED8);
+      color: white !important;
+      padding: 12px 20px;
+      border-radius: 30px;
+      text-decoration: none !important;
+      font-weight: 700;
+      font-size: 14px;
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      width: 100%;
+      text-align: center;
+    }
+    .aip-form-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 10px 25px rgba(59, 130, 246, 0.45); }
+
+    .aip-quote-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #C5A059, #A9843F);
+      color: white !important;
+      padding: 12px 20px;
+      border-radius: 30px;
+      text-decoration: none !important;
+      font-weight: 700;
+      font-size: 14px;
+      box-shadow: 0 6px 20px rgba(197, 160, 89, 0.35);
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      width: 100%;
+      text-align: center;
+    }
+    .aip-quote-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 10px 25px rgba(197, 160, 89, 0.45); }
+
+    .aip-action-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--aip-color, #1A1F36), #2D3556);
+      color: white !important;
+      padding: 12px 20px;
+      border-radius: 30px;
+      text-decoration: none !important;
+      font-weight: 700;
+      font-size: 14px;
+      box-shadow: 0 6px 20px rgba(26, 31, 54, 0.3);
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      width: 100%;
+      text-align: center;
+    }
+    .aip-action-btn:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 10px 25px rgba(26, 31, 54, 0.4); }
 
     .aip-link {
-      color: #2563EB !important;
+      color: var(--aip-secondary, #C5A059) !important;
       text-decoration: underline;
       font-weight: 600;
     }
@@ -291,10 +365,10 @@
       background: #F8FAFC;
       border: 1px solid #E2E8F0;
       border-radius: 16px;
-      color: #0F172A;
+      color: #1A1F36;
       padding: 12px 16px;
       font-size: 14px;
-      font-family: 'Cairo', 'Outfit', sans-serif;
+      font-family: 'Cairo', 'IBM Plex Sans', sans-serif;
       resize: none;
       min-height: 44px;
       max-height: 110px;
@@ -304,7 +378,7 @@
       line-height: 1.5;
     }
 
-    #aip-input:focus { border-color: #4F46E5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12); background: #FFFFFF; }
+    #aip-input:focus { border-color: var(--aip-color, #1A1F36); box-shadow: 0 0 0 3px rgba(var(--aip-color-rgb, 26, 31, 54), 0.12); background: #FFFFFF; }
     #aip-input::placeholder { color: #94A3B8; }
 
     #aip-send {
@@ -315,13 +389,13 @@
       display: flex; align-items: center; justify-content: center;
       font-size: 18px;
       color: white;
-      background: linear-gradient(135deg, #4F46E5, #7C3AED);
-      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+      background: linear-gradient(135deg, var(--aip-color, #1A1F36), var(--aip-secondary, #C5A059));
+      box-shadow: 0 4px 14px rgba(var(--aip-color-rgb, 26, 31, 54), 0.35);
       transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
       flex-shrink: 0;
     }
 
-    #aip-send:hover { transform: scale(1.1) rotate(-5deg); box-shadow: 0 6px 18px rgba(79, 70, 229, 0.5); }
+    #aip-send:hover { transform: scale(1.1) rotate(-5deg); box-shadow: 0 6px 18px rgba(var(--aip-color-rgb, 26, 31, 54), 0.5); }
     #aip-send:active { transform: scale(0.95); }
     #aip-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
@@ -345,10 +419,10 @@
       font-size: 36px;
       margin-bottom: 20px;
       position: relative;
-      box-shadow: 0 10px 25px rgba(79, 70, 229, 0.2);
+      box-shadow: 0 10px 25px rgba(var(--aip-color-rgb, 26, 31, 54), 0.2);
     }
 
-    .aip-welcome-name { font-size: 22px; font-weight: 800; color: #0F172A; margin-bottom: 10px; letter-spacing: -0.3px; }
+    .aip-welcome-name { font-size: 22px; font-weight: 800; color: #1A1F36; margin-bottom: 10px; letter-spacing: -0.3px; }
     .aip-welcome-msg { font-size: 14.5px; color: #64748B; line-height: 1.65; margin-bottom: 26px; }
 
     .aip-start-btn {
@@ -358,14 +432,14 @@
       color: white;
       font-size: 14.5px;
       font-weight: 700;
-      font-family: 'Cairo', 'Outfit', sans-serif;
+      font-family: 'Cairo', 'IBM Plex Sans', sans-serif;
       cursor: pointer;
       transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-      box-shadow: 0 6px 22px rgba(79, 70, 229, 0.4);
-      background: linear-gradient(135deg, #4F46E5, #7C3AED);
+      box-shadow: 0 6px 22px rgba(var(--aip-color-rgb, 26, 31, 54), 0.4);
+      background: linear-gradient(135deg, var(--aip-color, #1A1F36), var(--aip-secondary, #C5A059));
     }
 
-    .aip-start-btn:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 10px 28px rgba(79, 70, 229, 0.55); }
+    .aip-start-btn:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 10px 28px rgba(var(--aip-color-rgb, 26, 31, 54), 0.55); }
 
     #aip-footer {
       padding: 11px;
@@ -380,22 +454,26 @@
 
     /* DARK MODE STYLES (.aip-dark) */
     #aip-window.aip-dark {
-      background: #0B0F19;
+      background: #111321;
       color: #F8FAFC;
       box-shadow: 0 25px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08);
     }
-    #aip-window.aip-dark #aip-messages { background: #0B0F19; }
-    #aip-window.aip-dark #aip-welcome { background: #0B0F19; }
+    #aip-window.aip-dark #aip-messages { background: #111321; }
+    #aip-window.aip-dark #aip-welcome { background: #111321; }
     #aip-window.aip-dark .aip-welcome-name { color: #FFFFFF !important; }
     #aip-window.aip-dark .aip-welcome-msg { color: #94A3B8 !important; }
     #aip-window.aip-dark .aip-bubble-bot {
-      background: #111827;
+      background: #1A1F36;
       color: #F1F5F9;
-      border: 1px solid rgba(255,255,255,0.08);
+      border: 1px solid rgba(197, 160, 89, 0.3);
     }
-    #aip-window.aip-dark #aip-input-area { background: #111827; border-top: 1px solid rgba(255,255,255,0.06); }
-    #aip-window.aip-dark #aip-input { background: #1F2937; color: #F8FAFC; border: 1px solid rgba(255,255,255,0.1); }
-    #aip-window.aip-dark #aip-footer { background: #111827; color: #94A3B8; border-top: 1px solid rgba(255,255,255,0.06); }
+    #aip-window.aip-dark .aip-bubble-user {
+      background: var(--aip-secondary, #C5A059);
+      color: #1A1F36;
+    }
+    #aip-window.aip-dark #aip-input-area { background: #1A1F36; border-top: 1px solid rgba(255,255,255,0.06); }
+    #aip-window.aip-dark #aip-input { background: rgba(255,255,255,0.06); color: #F8FAFC; border: 1px solid rgba(255,255,255,0.1); }
+    #aip-window.aip-dark #aip-footer { background: #1A1F36; color: #94A3B8; border-top: 1px solid rgba(255,255,255,0.06); }
 
     #aip-messages::-webkit-scrollbar { width: 4px; }
     #aip-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
@@ -445,63 +523,18 @@
       flex-shrink: 0;
     }
 
-    .aip-bubble {
-      max-width: 100%;
-      padding: 12px 16px;
-      border-radius: 18px;
-      font-size: 14px;
-      line-height: 1.65;
-      word-wrap: break-word;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-      white-space: normal;
-    }
-
-    .aip-wa-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: linear-gradient(135deg, #25D366, #128C7E);
-      color: white !important;
-      padding: 10px 18px;
-      border-radius: 25px;
-      text-decoration: none !important;
-      font-weight: 700;
-      font-size: 13.5px;
-      margin: 8px 0 4px 0;
-      box-shadow: 0 4px 15px rgba(37,211,102,0.4);
-      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    .aip-wa-btn:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(37,211,102,0.6); }
-
-    .aip-link {
-      color: #64B5F6 !important;
-      text-decoration: underline;
-      font-weight: 600;
-    }
-
-    .aip-bubble-user {
-      color: white;
-      border-bottom-right-radius: 4px;
-    }
-
-    .aip-bubble-bot {
-      background: rgba(255,255,255,0.07);
-      color: #e8e8f0;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-bottom-left-radius: 4px;
-    }
-
     .aip-bubble-rtl { border-bottom-right-radius: 18px !important; border-bottom-left-radius: 4px !important; }
     .aip-bubble-user-rtl { border-bottom-left-radius: 4px !important; border-bottom-right-radius: 18px !important; }
 
     .aip-msg-time {
       font-size: 10px;
-      color: rgba(255,255,255,0.3);
+      color: rgba(0, 0, 0, 0.3);
       margin-top: 4px;
       padding: 0 2px;
       text-align: center;
+    }
+    #aip-window.aip-dark .aip-msg-time {
+      color: rgba(255,255,255,0.3);
     }
 
     /* TYPING INDICATOR */
@@ -514,8 +547,8 @@
     #aip-typing.show { display: flex; }
 
     .aip-typing-bubble {
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.08);
+      background: #FFFFFF;
+      border: 1px solid #E2E8F0;
       border-radius: 18px;
       border-bottom-left-radius: 4px;
       padding: 12px 16px;
@@ -523,12 +556,19 @@
       gap: 4px;
       align-items: center;
     }
+    #aip-window.aip-dark .aip-typing-bubble {
+      background: #1A1F36;
+      border: 1px solid rgba(197, 160, 89, 0.3);
+    }
 
     .aip-typing-dot {
       width: 7px; height: 7px;
-      background: rgba(255,255,255,0.4);
+      background: rgba(0, 0, 0, 0.4);
       border-radius: 50%;
       animation: aip-typing 1.2s infinite;
+    }
+    #aip-window.aip-dark .aip-typing-dot {
+      background: rgba(255,255,255,0.4);
     }
 
     .aip-typing-dot:nth-child(2) { animation-delay: 0.2s; }
@@ -539,77 +579,7 @@
       30% { transform: translateY(-6px); opacity: 1; }
     }
 
-    /* INPUT AREA */
-    #aip-input-area {
-      padding: 12px 14px;
-      background: #13131c;
-      border-top: 1px solid rgba(255,255,255,0.06);
-      display: flex;
-      align-items: flex-end;
-      gap: 10px;
-      flex-shrink: 0;
-    }
-
-    #aip-input {
-      flex: 1;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 14px;
-      color: #e8e8f0;
-      padding: 10px 14px;
-      font-size: 13.5px;
-      font-family: 'Cairo', 'Inter', sans-serif;
-      resize: none;
-      min-height: 42px;
-      max-height: 100px;
-      outline: none;
-      transition: border-color 0.2s;
-      direction: ${isRTL() ? 'rtl' : 'ltr'};
-      line-height: 1.5;
-    }
-
-    #aip-input:focus { border-color: var(--aip-color, #6C63FF); }
-    #aip-input::placeholder { color: rgba(255,255,255,0.25); }
-
-    #aip-send {
-      width: 42px; height: 42px;
-      border-radius: 50%;
-      border: none;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
-      color: white;
-      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-      flex-shrink: 0;
-    }
-
-    #aip-send:hover { transform: scale(1.1); }
-    #aip-send:active { transform: scale(0.95); }
-    #aip-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
     /* WELCOME SCREEN */
-    #aip-welcome {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 30px;
-      background: #0f0f17;
-      text-align: center;
-      z-index: 10;
-    }
-
-    .aip-welcome-avatar {
-      width: 72px; height: 72px;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 32px;
-      margin-bottom: 18px;
-      position: relative;
-    }
-
     .aip-welcome-avatar::after {
       content: '';
       position: absolute;
@@ -624,35 +594,6 @@
       0% { transform: scale(1); opacity: 0.3; }
       50% { transform: scale(1.08); opacity: 0.1; }
       100% { transform: scale(1); opacity: 0.3; }
-    }
-
-    .aip-welcome-name { font-size: 20px; font-weight: 800; color: white; margin-bottom: 10px; }
-    .aip-welcome-msg { font-size: 14px; color: rgba(255,255,255,0.6); line-height: 1.6; margin-bottom: 24px; }
-
-    .aip-start-btn {
-      padding: 12px 28px;
-      border-radius: 50px;
-      border: none;
-      color: white;
-      font-size: 14px;
-      font-weight: 700;
-      font-family: 'Cairo', 'Inter', sans-serif;
-      cursor: pointer;
-      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-      box-shadow: 0 4px 20px rgba(108,99,255,0.4);
-    }
-
-    .aip-start-btn:hover { transform: scale(1.05); }
-
-    /* FOOTER */
-    #aip-footer {
-      padding: 8px;
-      text-align: center;
-      font-size: 10px;
-      color: rgba(255,255,255,0.2);
-      background: #13131c;
-      border-top: 1px solid rgba(255,255,255,0.04);
-      flex-shrink: 0;
     }
 
     #aip-footer a { color: rgba(255,255,255,0.3); text-decoration: none; }
@@ -678,10 +619,17 @@
 
     return `
       <style>${styles}</style>
-      <style>:root { --aip-color: ${config.primary_color}; }</style>
+      <style>
+        :root { 
+          --aip-color: ${config.primary_color}; 
+          --aip-color-rgb: ${hexToRgb(config.primary_color)};
+          --aip-secondary: ${config.secondary_color || '#C5A059'}; 
+          --aip-secondary-rgb: ${hexToRgb(config.secondary_color || '#C5A059')};
+        }
+      </style>
 
       <!-- TOGGLE BUTTON -->
-      <button id="aip-toggle" style="background: linear-gradient(135deg, ${config.primary_color}, ${config.secondary_color || '#4ECDC4'});" aria-label="Open chat">
+      <button id="aip-toggle" style="background: linear-gradient(135deg, var(--aip-color), var(--aip-secondary));" aria-label="Open chat">
         <span class="aip-toggle-icon" id="aip-icon-open">💬</span>
         <span class="aip-toggle-icon hidden" id="aip-icon-close">✕</span>
         <div id="aip-badge"></div>
@@ -691,7 +639,7 @@
       <div id="aip-window" role="dialog" aria-label="Chat window">
         
         <!-- HEADER -->
-        <div id="aip-header" style="background: linear-gradient(135deg, ${config.primary_color}, ${config.secondary_color || '#4ECDC4'});">
+        <div id="aip-header">
           <div class="aip-header-glow"></div>
           <div class="aip-avatar">
             ${config.avatar_url ? `<img src="${config.avatar_url}" alt="${agentName}">` : '🤖'}
@@ -711,19 +659,19 @@
         <div id="aip-messages">
           <!-- WELCOME SCREEN -->
           <div id="aip-welcome">
-            <div class="aip-welcome-avatar" style="background: linear-gradient(135deg, ${config.primary_color}33, ${config.secondary_color || '#4ECDC4'}33); border-color: ${config.primary_color}44;">
+            <div class="aip-welcome-avatar" style="background: rgba(var(--aip-color-rgb), 0.1); border: 2px solid rgba(var(--aip-color-rgb), 0.15);">
               ${config.avatar_url ? `<img src="${config.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">` : '🤖'}
             </div>
             <div class="aip-welcome-name">${agentName}</div>
             <div class="aip-welcome-msg">${welcomeMsg}</div>
-            <button class="aip-start-btn" style="background: linear-gradient(135deg, ${config.primary_color}, ${config.secondary_color || '#4ECDC4'});" onclick="window._aipWidget.startChat()">
+            <button class="aip-start-btn" onclick="window._aipWidget.startChat()">
               ${isRTL() ? '🚀 ابدأ المحادثة' : '🚀 Start Chat'}
             </button>
           </div>
 
           <!-- TYPING INDICATOR -->
           <div id="aip-typing">
-            <div class="aip-msg-avatar-sm" style="background:${config.primary_color}33;color:${config.primary_color};">🤖</div>
+            <div class="aip-msg-avatar-sm">🤖</div>
             <div class="aip-typing-bubble">
               <div class="aip-typing-dot"></div>
               <div class="aip-typing-dot"></div>
@@ -735,7 +683,7 @@
         <!-- INPUT AREA -->
         <div id="aip-input-area" style="display:none;">
           <textarea id="aip-input" placeholder="${inputPlaceholder}" rows="1" maxlength="2000"></textarea>
-          <button id="aip-send" style="background: linear-gradient(135deg, ${config.primary_color}, ${config.secondary_color || '#4ECDC4'});" aria-label="Send">
+          <button id="aip-send" aria-label="Send">
             ${isRTL() ? '←' : '→'}
           </button>
         </div>
@@ -749,28 +697,68 @@
   // =================== RICH MARKDOWN & WHATSAPP FORMATTER ===================
   function formatMessageHtml(text) {
     if (!text) return '';
+    
+    // Detect language of the message to set button text language
+    const isArabicMsg = /[\u0600-\u06FF]/.test(text);
+
     let html = text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 
     // Bold text: **text**
-    html = html.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#ffffff;font-weight:700;">$1</strong>');
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong style="color:inherit;font-weight:700;">$1</strong>');
 
-    // Markdown Links: [Title](URL)
+    // Placeholders for links to prevent double parsing
+    const placeholders = [];
+    
+    // 1. First, parse Markdown Links: [Title](URL)
     html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, (match, title, url) => {
-      const cleanTitle = title.replace(/^💬\s*/, '');
-      if (url.includes('wa.me') || url.includes('whatsapp.com')) {
-        return `<div style="margin:8px 0;"><a href="${url}" target="_blank" rel="noopener" class="aip-wa-btn">💬 ${cleanTitle}</a></div>`;
+      const cleanTitle = title.replace(/^[💬📋📄🔗🚀]\s*/, '');
+      const lowerUrl = url.toLowerCase();
+      let btnHtml = '';
+      if (lowerUrl.includes('wa.me') || lowerUrl.includes('whatsapp.com')) {
+        btnHtml = `<div class="aip-btn-container"><a href="${url}" target="_blank" rel="noopener" class="aip-wa-btn">💬 ${cleanTitle}</a></div>`;
+      } else if (lowerUrl.includes('form') || lowerUrl.includes('booking') || lowerUrl.includes('book') || lowerUrl.includes('appoint') || lowerUrl.includes('survey') || lowerUrl.includes('docs.google.com/forms')) {
+        btnHtml = `<div class="aip-btn-container"><a href="${url}" target="_blank" rel="noopener" class="aip-form-btn">📋 ${cleanTitle}</a></div>`;
+      } else if (lowerUrl.includes('quote') || lowerUrl.includes('pricing') || lowerUrl.includes('price') || lowerUrl.includes('offer') || lowerUrl.includes('quotation')) {
+        btnHtml = `<div class="aip-btn-container"><a href="${url}" target="_blank" rel="noopener" class="aip-quote-btn">📄 ${cleanTitle}</a></div>`;
+      } else {
+        btnHtml = `<div class="aip-btn-container"><a href="${url}" target="_blank" rel="noopener" class="aip-action-btn">🔗 ${cleanTitle}</a></div>`;
       }
-      return `<a href="${url}" target="_blank" rel="noopener" class="aip-link">${cleanTitle}</a>`;
+      const ph = `___LINK_PH_${placeholders.length}___`;
+      placeholders.push({ placeholder: ph, content: btnHtml });
+      return ph;
     });
 
-    // Standalone WhatsApp links (not already inside href)
-    html = html.replace(/(^|[^"])https?:\/\/(?:wa\.me|api\.whatsapp\.com)\/([^\s<"]+)/g, (match, prefix, path) => {
-      const fullUrl = `https://wa.me/${path}`;
-      return `${prefix}<div style="margin:8px 0;"><a href="${fullUrl}" target="_blank" rel="noopener" class="aip-wa-btn">💬 تواصل مباشر عبر الواتساب</a></div>`;
+    // 2. Next, parse raw URLs (not inside placeholders or markdown)
+    // Regex matching http/https URLs
+    html = html.replace(/(https?:\/\/[^\s<"'\)]+)/g, (url) => {
+      const cleanUrl = url.replace(/[\.,\?!]+$/, '');
+      const lowerUrl = cleanUrl.toLowerCase();
+      let btnHtml = '';
+      if (lowerUrl.includes('wa.me') || lowerUrl.includes('whatsapp.com')) {
+        const title = isArabicMsg ? 'تواصل عبر الواتساب' : 'Chat on Whatsapp';
+        btnHtml = `<div class="aip-btn-container"><a href="${cleanUrl}" target="_blank" rel="noopener" class="aip-wa-btn">💬 ${title}</a></div>`;
+      } else if (lowerUrl.includes('form') || lowerUrl.includes('booking') || lowerUrl.includes('book') || lowerUrl.includes('appoint') || lowerUrl.includes('survey') || lowerUrl.includes('docs.google.com/forms')) {
+        const title = isArabicMsg ? 'تعبئة النموذج / الاستمارة' : 'Fill out the Form';
+        btnHtml = `<div class="aip-btn-container"><a href="${cleanUrl}" target="_blank" rel="noopener" class="aip-form-btn">📋 ${title}</a></div>`;
+      } else if (lowerUrl.includes('quote') || lowerUrl.includes('pricing') || lowerUrl.includes('price') || lowerUrl.includes('offer') || lowerUrl.includes('quotation')) {
+        const title = isArabicMsg ? 'طلب عرض سعر' : 'Get a Quote';
+        btnHtml = `<div class="aip-btn-container"><a href="${cleanUrl}" target="_blank" rel="noopener" class="aip-quote-btn">📄 ${title}</a></div>`;
+      } else {
+        const title = isArabicMsg ? 'انتقال إلى الرابط' : 'Visit Link';
+        btnHtml = `<div class="aip-btn-container"><a href="${cleanUrl}" target="_blank" rel="noopener" class="aip-action-btn">🔗 ${title}</a></div>`;
+      }
+      const ph = `___LINK_PH_${placeholders.length}___`;
+      placeholders.push({ placeholder: ph, content: btnHtml });
+      return ph;
     });
+
+    // 3. Restore all placeholders
+    for (const ph of placeholders) {
+      html = html.replace(ph.placeholder, ph.content);
+    }
 
     // Bullet points
     html = html.replace(/^\s*[\-\*•]\s+(.*)$/gm, '• $1');

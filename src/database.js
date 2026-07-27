@@ -26,8 +26,8 @@ const BusinessSchema = new mongoose.Schema({
   welcome_message: { type: String, default: 'Hello! How can I help you today? 😊' },
   welcome_message_ar: { type: String, default: 'أهلاً! كيف يمكنني مساعدتك اليوم؟ 😊' },
   avatar_url: String,
-  primary_color: { type: String, default: '#6C63FF' },
-  secondary_color: { type: String, default: '#4ECDC4' },
+  primary_color: { type: String, default: '#1A1F36' },
+  secondary_color: { type: String, default: '#C5A059' },
   language: { type: String, default: 'auto' },
   knowledge_base: { type: String, default: '[]' },
   working_hours: { type: Object, default: { enabled: false } },
@@ -197,8 +197,8 @@ async function seedDemoData() {
     agent_name_ar: 'آريا',
     welcome_message: "Hello! I'm Aria, your virtual assistant. How can I help you today? 😊",
     welcome_message_ar: 'أهلاً! أنا آريا، مساعدتك الافتراضية. كيف يمكنني مساعدتك اليوم؟ 😊',
-    primary_color: '#6C63FF',
-    secondary_color: '#4ECDC4',
+    primary_color: '#1A1F36',
+    secondary_color: '#C5A059',
   });
 
   await Integration.create({
@@ -238,8 +238,8 @@ const businesses = {
       welcome_message: data.welcome_message || 'Hello! How can I help you today? 😊',
       welcome_message_ar: data.welcome_message_ar || 'أهلاً! كيف يمكنني مساعدتك اليوم؟ 😊',
       avatar_url: data.avatar_url,
-      primary_color: data.primary_color || '#6C63FF',
-      secondary_color: data.secondary_color || '#4ECDC4',
+      primary_color: data.primary_color || '#1A1F36',
+      secondary_color: data.secondary_color || '#C5A059',
       language: data.language || 'auto',
       knowledge_base: typeof data.knowledge_base === 'string' ? data.knowledge_base : JSON.stringify(data.knowledge_base || []),
       escalation_email: data.escalation_email,
