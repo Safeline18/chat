@@ -30,6 +30,7 @@ const twitterWebhook = require('./src/webhooks/twitter');
 // =====================================================
 
 const app = express();
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 // =====================================================
@@ -190,13 +191,12 @@ app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 500,
-
     message: {
       error: 'Too many requests'
     },
-
     standardHeaders: true,
-    legacyHeaders: false
+    legacyHeaders: false,
+    validate: { trustProxy: false }
   })
 );
 
