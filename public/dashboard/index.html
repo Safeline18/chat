@@ -1507,6 +1507,34 @@ function initSocket() {
   }
 }
 
+let state = {
+  businesses: [],
+  conversations: [],
+  selectedConv: null,
+  currentEditBiz: null,
+  kbItems: [],
+};
+
+// =================== API ===================
+async function api(path, method = 'GET', body = null) {
+  const token = localStorage.getItem('raqminha_admin_token') || localStorage.getItem('adminToken') || CONFIG.adminToken || 'admin123';
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Token': token,
+    },
+  };
+  if (body) opts.body = JSON.stringify(body);
+
+  const res = await fetch(CONFIG.serverUrl + path, opts);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(err.error || 'Request failed');
+  }
+  return res.json();
+}
+
 function addToLiveFeed(data) {
   const feed = document.getElementById('liveFeed');
   const channelIcons = {
