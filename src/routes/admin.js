@@ -4,11 +4,6 @@
 const express = require('express');
 const router = express.Router();
 const { businesses, integrations, conversations, messages, analytics } = require('../database');
-
-const multer = require('multer');
-const pdfParse = require('pdf-parse');
-const upload = multer({ limits: { fileSize: 20 * 1024 * 1024 } }); // 20MB max
-
 // Auth routes (unprotected)
 router.post('/login', async (req, res) => {
   try {
@@ -58,10 +53,34 @@ async function requireAuth(req, res, next) {
 router.use(requireAuth);
 
 // ---- PDF UPLOAD ----
-router.post('/businesses/:id/upload-pdf', upload.single('pdf'), async (req, res) => {
+router.post('/businesses/:id/upload-pdf', async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'لم يتم إرفاق ملف PDF' });
-    const pdfData = await pdfParse(req.file.buffer);
+    let pdfBuffer = null;
+    let fileName = 'document.pdf';
+
+    // Handle base64 payload or multer upload safely
+    if (req.body && req.body.pdfBase64) {
+      pdfBuffer = Buffer.from(req.body.pdfBase64, 'base64');
+      fileName = req.body.fileName || 'document.pdf';
+    } else {
+      let multer;
+      try { multer = require('multer'); } catch (e) {}
+      if (multer) {
+        const upload = multer({ limits: { fileSize: 20 * 1024 * 1024 } }).single('pdf');
+        await new Promise((resolve, reject) => {
+          upload(req, res, (err) => err ? reject(err) : resolve());
+        });
+        if (req.file) {
+          pdfBuffer = req.file.buffer;
+          fileName = req.file.originalname;
+        }
+      }
+    }
+
+    if (!pdfBuffer) return res.status(400).json({ error: 'لم يتم إرفاق ملف PDF' });
+
+    const { parsePdfBuffer } = require('../utils/pdf-parser');
+    const pdfData = await parsePdfBuffer(pdfBuffer);
     const text = pdfData.text;
 
     if (!text || !text.trim()) {
@@ -73,11 +92,11 @@ router.post('/businesses/:id/upload-pdf', upload.single('pdf'), async (req, res)
     const chunks = [];
     for (let i = 0; i < text.length; i += chunkSize) {
       const chunkText = text.substring(i, i + chunkSize).trim();
-      if (chunkText.length > 30) {
+      if (chunkText.length > 20) {
         chunks.push({
-          content: `[مستند PDF: ${req.file.originalname}]\n${chunkText}`,
+          content: `[مستند PDF: ${fileName}]\n${chunkText}`,
           content_type: 'pdf_document',
-          source_url: req.file.originalname,
+          source_url: fileName,
           keywords: chunkText.split(/\s+/).slice(0, 8)
         });
       }
@@ -90,7 +109,7 @@ router.post('/businesses/:id/upload-pdf', upload.single('pdf'), async (req, res)
     res.json({
       success: true,
       message: `تم رفع ومعالجة ملف الـ PDF بنجاح! تم إنشاء ${chunks.length} جزء تدريبي للذكاء الاصطناعي.`,
-      pages: pdfData.numpages,
+      pages: pdfData.numpages || 1,
       chunksCount: chunks.length
     });
   } catch (err) {
