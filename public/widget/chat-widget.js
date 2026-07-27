@@ -11,6 +11,7 @@
   const BUSINESS_ID = script?.getAttribute('data-business-id');
   const SERVER_URL = script?.getAttribute('data-server') || (script?.src ? new URL(script.src).origin : window.location.origin);
   const WIDGET_POSITION = script?.getAttribute('data-position') || 'bottom-right';
+  const WIDGET_BOTTOM = script?.getAttribute('data-bottom') || '96px';
 
   if (!BUSINESS_ID) { console.error('[AI Agent Widget] Missing data-business-id'); return; }
 
@@ -62,7 +63,7 @@
     #aip-widget {
       position: fixed;
       ${WIDGET_POSITION.includes('right') ? 'right: 20px;' : 'left: 20px;'}
-      bottom: 20px;
+      bottom: ${WIDGET_BOTTOM};
       z-index: 2147483647;
       direction: ${isRTL() ? 'rtl' : 'ltr'};
     }
