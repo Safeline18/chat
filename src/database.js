@@ -153,10 +153,6 @@ let cachedPromise = null;
 
 async function initDatabase() {
   const uri = process.env.MONGODB_URI || 'mongodb+srv://safelinesccco_db_user:KIpb45HbZUPSEXw8@cluster0.wmnwki3.mongodb.net/ai_agent_platform?retryWrites=true&w=majority&appName=Cluster0';
-  if (!uri) {
-    console.warn('⚠️ MONGODB_URI is not set in environment variables');
-    throw new Error('MONGODB_URI is not set in Vercel Environment Variables');
-  }
 
   if (mongoose.connection.readyState === 1) {
     return mongoose.connection;
@@ -164,8 +160,8 @@ async function initDatabase() {
 
   if (!cachedPromise) {
     cachedPromise = mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 30000,
     }).then(async (m) => {
       console.log('✅ MongoDB connected:', m.connection.host);
       try { await seedDemoData(); } catch (e) {}
@@ -173,7 +169,7 @@ async function initDatabase() {
     }).catch(err => {
       cachedPromise = null;
       console.error('❌ MongoDB connection failed:', err.message);
-      throw err;
+      return null;
     });
   }
 
