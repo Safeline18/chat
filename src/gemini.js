@@ -188,7 +188,8 @@ async function buildRAGSystemPrompt(business, userMessage, detectedInfo, convers
     `- اسم العميل الحالي هو "${customerName}". خاطبه باسمه باحترام في إجابتك (مثل: "يا أستاذ ${customerName}" أو "أبشر يا ${customerName}").` :
     `- في البداية إذا لم يذكر العميل اسمه، رحب به واسأله بلطف عن اسمه الكريم ("تفضل وش اسمك الكريم عشان أقدر أخدمك بشكل أفضل؟").`;
 
-  const waUrl = business.whatsapp ? `https://wa.me/${business.whatsapp.replace(/\+/g, '')}` : null;
+  const waNumber = business.whatsapp || business.phone;
+  const waUrl = waNumber ? `https://wa.me/${waNumber.replace(/[\s\+\-\(\)]/g, '')}` : null;
 
   return `أنت موظف خدمة عملاء بشري ذكي، محترف، وودود للغاية.
 
