@@ -146,8 +146,8 @@
     }
 
     .aip-avatar {
-      width: 56px; height: 56px;
-      border-radius: 18px;
+      width: 54px; height: 54px;
+      border-radius: 16px;
       display: flex; align-items: center; justify-content: center;
       font-size: 26px;
       background: #FFFFFF;
@@ -158,7 +158,7 @@
       box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
     }
 
-    .aip-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 14px; }
+    .aip-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; }
 
     .aip-header-info { flex: 1; min-width: 0; text-align: right; }
     .aip-header-name { font-size: 19px; font-weight: 800; color: #FFFFFF; margin-bottom: 2px; letter-spacing: -0.2px; }
@@ -211,6 +211,14 @@
       width: 100%;
     }
 
+    .aip-msg-group-user {
+      align-items: flex-end;
+    }
+
+    .aip-msg-group-bot {
+      align-items: flex-start;
+    }
+
     .aip-msg-meta {
       display: flex;
       align-items: center;
@@ -220,13 +228,11 @@
     }
 
     .aip-msg-meta-user {
-      justify-content: flex-start;
-      direction: rtl;
+      flex-direction: row-reverse;
     }
 
     .aip-msg-meta-bot {
-      justify-content: flex-start;
-      direction: rtl;
+      flex-direction: row;
     }
 
     .aip-msg-avatar-icon {
@@ -246,8 +252,9 @@
       font-weight: 700;
       padding: 2px 10px;
       border-radius: 12px;
-      background: #FEF3C7;
-      color: #D97706;
+      background: #EEF2FF;
+      color: #4F46E5;
+      border: 1px solid #C7D2FE;
     }
 
     .aip-msg-name-text {
@@ -295,10 +302,10 @@
     }
 
     .aip-bubble-user {
-      background: #F1F5F9 !important;
-      color: #1E293B !important;
+      background: linear-gradient(135deg, #4F46E5, #3B82F6) !important;
+      color: #FFFFFF !important;
       border-radius: 20px 20px 4px 20px;
-      border: 1px solid #E2E8F0;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
     }
 
     /* ACTION BUTTONS IN CHAT */
@@ -387,28 +394,29 @@
 
     #aip-input-container {
       background: #FFFFFF;
-      border-top: 1px solid #F1F5F9;
+      border-top: 1px solid #E2E8F0;
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
-      padding-top: 2px;
+      padding-top: 4px;
+      padding-bottom: 8px;
     }
 
     #aip-input-area {
-      background: #EFF6FF;
+      background: #F1F5F9;
       border-radius: 22px;
-      margin: 12px 16px 4px 16px;
+      margin: 10px 16px 4px 16px;
       padding: 6px 8px 6px 14px;
       display: flex;
       align-items: center;
       gap: 10px;
-      border: 1px solid #E2E8F0;
+      border: 1px solid #CBD5E1;
       transition: border-color 0.2s, box-shadow 0.2s;
     }
 
     #aip-input-area:focus-within {
       border-color: #3B82F6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
     }
 
     #aip-input {
@@ -429,12 +437,12 @@
       line-height: 1.5;
     }
 
-    #aip-input::placeholder { color: #94A3B8; font-weight: 500; }
+    #aip-input::placeholder { color: #64748B; font-weight: 500; }
 
     #aip-emoji-btn {
       font-size: 20px;
       cursor: pointer;
-      opacity: 0.75;
+      opacity: 0.8;
       transition: transform 0.2s, opacity 0.2s;
       user-select: none;
     }
@@ -458,53 +466,8 @@
     #aip-send:active { transform: scale(0.94); }
     #aip-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
-    #aip-welcome {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 32px;
-      background: #FFFFFF;
-      text-align: center;
-      z-index: 10;
-    }
-
-    .aip-welcome-avatar {
-      width: 80px; height: 80px;
-      border-radius: 22px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 38px;
-      margin-bottom: 20px;
-      position: relative;
-      background: white;
-      padding: 6px;
-      border: 1px solid rgba(0,0,0,0.06);
-      box-shadow: 0 10px 30px rgba(124, 58, 237, 0.15);
-    }
-
-    .aip-welcome-name { font-size: 22px; font-weight: 800; color: #1E293B; margin-bottom: 10px; letter-spacing: -0.3px; }
-    .aip-welcome-msg { font-size: 14.5px; color: #64748B; line-height: 1.65; margin-bottom: 26px; }
-
-    .aip-start-btn {
-      padding: 14px 36px;
-      border-radius: 50px;
-      border: none;
-      color: white;
-      font-size: 15px;
-      font-weight: 700;
-      font-family: 'Cairo', 'IBM Plex Sans', sans-serif;
-      cursor: pointer;
-      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-      box-shadow: 0 6px 22px rgba(124, 58, 237, 0.35);
-      background: linear-gradient(135deg, #7C3AED 0%, #06B6D4 100%);
-    }
-
-    .aip-start-btn:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 10px 28px rgba(124, 58, 237, 0.5); }
-
     #aip-footer {
-      padding: 6px 0 10px 0;
+      padding: 6px 0 6px 0;
       text-align: center;
       font-size: 11px;
       color: #94A3B8;
@@ -563,7 +526,6 @@
   // =================== HTML ===================
   function buildHTML() {
     const agentName = getText(config.agent_name, config.agent_name_ar);
-    const welcomeMsg = getText(config.welcome_message, config.welcome_message_ar);
     const inputPlaceholder = isRTL() ? 'اكتب رسالتك...' : 'Type a message...';
 
     return `
@@ -593,7 +555,9 @@
         
         <!-- HEADER -->
         <div id="aip-header">
-          <button class="aip-close-btn" onclick="window._aipWidget.toggle()" aria-label="Close">✕</button>
+          <div class="aip-avatar">
+            ${config.avatar_url ? `<img src="${config.avatar_url}" alt="${agentName}">` : '🤖'}
+          </div>
           <div class="aip-header-info">
             <div class="aip-header-name">${agentName}</div>
             <div class="aip-header-status">
@@ -601,25 +565,11 @@
               <span>${isRTL() ? 'متاح الآن' : 'Online now'}</span>
             </div>
           </div>
-          <div class="aip-avatar">
-            ${config.avatar_url ? `<img src="${config.avatar_url}" alt="${agentName}">` : '🤖'}
-          </div>
+          <button class="aip-close-btn" onclick="window._aipWidget.toggle()" aria-label="Close">✕</button>
         </div>
 
         <!-- MESSAGES -->
         <div id="aip-messages">
-          <!-- WELCOME SCREEN -->
-          <div id="aip-welcome">
-            <div class="aip-welcome-avatar">
-              ${config.avatar_url ? `<img src="${config.avatar_url}" style="width:100%;height:100%;border-radius:16px;object-fit:cover;">` : '🤖'}
-            </div>
-            <div class="aip-welcome-name">${agentName}</div>
-            <div class="aip-welcome-msg">${welcomeMsg}</div>
-            <button class="aip-start-btn" onclick="window._aipWidget.startChat()">
-              ${isRTL() ? '🚀 ابدأ المحادثة' : '🚀 Start Chat'}
-            </button>
-          </div>
-
           <!-- TYPING INDICATOR -->
           <div id="aip-typing">
             <div class="aip-msg-avatar-icon">🤖</div>
@@ -631,8 +581,8 @@
           </div>
         </div>
 
-        <!-- INPUT CONTAINER -->
-        <div id="aip-input-container" style="display:none;">
+        <!-- INPUT CONTAINER (ALWAYS VISIBLE) -->
+        <div id="aip-input-container">
           <div id="aip-input-area">
             <span id="aip-emoji-btn">😊</span>
             <textarea id="aip-input" placeholder="${inputPlaceholder}" rows="1" maxlength="2000"></textarea>
@@ -739,8 +689,8 @@
     if (role === 'user') {
       metaHtml = `
         <div class="aip-msg-meta aip-msg-meta-user">
-          <div class="aip-msg-avatar-icon" style="background:#E2E8F0;color:#64748B;">💻</div>
-          <span class="aip-msg-name-badge">${isRTL() ? 'محمد' : 'User'}</span>
+          <div class="aip-msg-avatar-icon" style="background:#4F46E5;color:#FFFFFF;">👤</div>
+          <span class="aip-msg-name-badge">${isRTL() ? 'أنت' : 'You'}</span>
           <span class="aip-msg-time-text">${time} ${isRTL() ? 'من' : 'from'}</span>
         </div>
       `;
