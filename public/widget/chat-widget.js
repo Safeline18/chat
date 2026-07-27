@@ -104,19 +104,20 @@
 
     @keyframes aip-badge-in { from { transform: scale(0); } to { transform: scale(1); } }
 
-    /* CHAT WINDOW */
+    /* CHAT WINDOW (DEFAULT LIGHT MODE) */
     #aip-window {
       position: absolute;
       ${WIDGET_POSITION.includes('right') ? 'right: 0;' : 'left: 0;'}
       bottom: 76px;
       width: 380px;
       height: 580px;
-      background: #0f0f17;
+      background: #ffffff;
+      color: #1e1e2d;
       border-radius: 20px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.08);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06);
       transform: scale(0.9) translateY(20px);
       opacity: 0;
       pointer-events: none;
@@ -130,82 +131,7 @@
       pointer-events: all;
     }
 
-    /* HEADER */
-    #aip-header {
-      padding: 16px 18px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      position: relative;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-
-    #aip-header::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: inherit;
-      z-index: -1;
-    }
-
-    .aip-header-glow {
-      position: absolute;
-      inset: 0;
-      opacity: 0.15;
-      background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.3), transparent);
-    }
-
-    .aip-avatar {
-      width: 44px; height: 44px;
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 20px;
-      background: rgba(255,255,255,0.15);
-      border: 2px solid rgba(255,255,255,0.2);
-      flex-shrink: 0;
-      overflow: hidden;
-    }
-
-    .aip-avatar img { width: 100%; height: 100%; object-fit: cover; }
-
-    .aip-header-info { flex: 1; min-width: 0; }
-    .aip-header-name { font-size: 15px; font-weight: 700; color: white; margin-bottom: 3px; }
-    .aip-header-status {
-      font-size: 12px;
-      color: rgba(255,255,255,0.75);
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .aip-status-dot {
-      width: 7px; height: 7px;
-      background: #00E676;
-      border-radius: 50%;
-      animation: aip-pulse-green 2s infinite;
-    }
-
-    @keyframes aip-pulse-green {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-
-    .aip-close-btn {
-      width: 32px; height: 32px;
-      background: rgba(255,255,255,0.15);
-      border: none; border-radius: 50%;
-      color: white;
-      cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 14px;
-      transition: background 0.2s;
-      flex-shrink: 0;
-    }
-
-    .aip-close-btn:hover { background: rgba(255,255,255,0.25); }
-
-    /* MESSAGES */
+    /* MESSAGES (LIGHT DEFAULT) */
     #aip-messages {
       flex: 1;
       overflow-y: auto;
@@ -213,8 +139,91 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
-      background: #0f0f17;
+      background: #f8f9fc;
     }
+
+    .aip-bubble-bot {
+      background: #ffffff;
+      color: #2b2b36;
+      border: 1px solid #e2e4ed;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      border-bottom-left-radius: 4px;
+    }
+
+    #aip-input-area {
+      padding: 12px 14px;
+      background: #ffffff;
+      border-top: 1px solid #eef0f6;
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    #aip-input {
+      flex: 1;
+      background: #f4f5f9;
+      border: 1px solid #dce0ed;
+      border-radius: 14px;
+      color: #1e1e2d;
+      padding: 10px 14px;
+      font-size: 13.5px;
+      font-family: 'Cairo', 'Inter', sans-serif;
+      resize: none;
+      min-height: 42px;
+      max-height: 100px;
+      outline: none;
+      transition: border-color 0.2s;
+      direction: ${isRTL() ? 'rtl' : 'ltr'};
+      line-height: 1.5;
+    }
+
+    #aip-input::placeholder { color: #8c93a6; }
+
+    #aip-welcome {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      background: #ffffff;
+      text-align: center;
+      z-index: 10;
+    }
+
+    .aip-welcome-name { font-size: 20px; font-weight: 800; color: #1e1e2d; margin-bottom: 10px; }
+    .aip-welcome-msg { font-size: 14px; color: #555566; line-height: 1.6; margin-bottom: 24px; }
+
+    #aip-footer {
+      padding: 10px;
+      text-align: center;
+      font-size: 11px;
+      color: #777788;
+      background: #ffffff;
+      border-top: 1px solid #eef0f6;
+      flex-shrink: 0;
+    }
+
+    /* DARK MODE STYLES (.aip-dark) */
+    #aip-window.aip-dark {
+      background: #0f0f17;
+      color: #f0f0f8;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08);
+    }
+    #aip-window.aip-dark #aip-messages { background: #0f0f17; }
+    #aip-window.aip-dark #aip-welcome { background: #0f0f17; }
+    #aip-window.aip-dark .aip-welcome-name { color: #ffffff !important; }
+    #aip-window.aip-dark .aip-welcome-msg { color: rgba(255,255,255,0.6) !important; }
+    #aip-window.aip-dark .aip-bubble-bot {
+      background: rgba(255,255,255,0.07);
+      color: #e8e8f0;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    #aip-window.aip-dark #aip-input-area { background: #13131c; border-top: 1px solid rgba(255,255,255,0.06); }
+    #aip-window.aip-dark #aip-input { background: rgba(255,255,255,0.06); color: #e8e8f0; border: 1px solid rgba(255,255,255,0.1); }
+    #aip-window.aip-dark #aip-footer { background: #13131c; color: rgba(255,255,255,0.4); border-top: 1px solid rgba(255,255,255,0.04); }
 
     #aip-messages::-webkit-scrollbar { width: 4px; }
     #aip-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
@@ -522,6 +531,7 @@
               <span>${isRTL() ? 'متاح الآن' : 'Online now'}</span>
             </div>
           </div>
+          <button id="aip-theme-toggle" class="aip-close-btn" style="margin-left: 4px; font-size: 15px;" onclick="window._aipWidget.toggleTheme()" title="تغيير الثيم (فاتح / داكن)">☀️</button>
           <button class="aip-close-btn" onclick="window._aipWidget.toggle()" aria-label="Close">✕</button>
         </div>
 
@@ -728,6 +738,15 @@
       .replace(/\n/g, '<br>');
   }
 
+  function toggleTheme() {
+    const win = document.getElementById('aip-window');
+    const toggleBtn = document.getElementById('aip-theme-toggle');
+    if (!win) return;
+    const isDark = win.classList.toggle('aip-dark');
+    if (toggleBtn) toggleBtn.innerHTML = isDark ? '🌙' : '☀️';
+    localStorage.setItem('aip_theme', isDark ? 'dark' : 'light');
+  }
+
   // =================== INIT ===================
   async function init() {
     // Fetch business config
@@ -744,6 +763,14 @@
     container.id = 'aip-widget';
     container.innerHTML = buildHTML();
     document.body.appendChild(container);
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('aip_theme');
+    if (savedTheme === 'dark') {
+      document.getElementById('aip-window')?.classList.add('aip-dark');
+      const toggleBtn = document.getElementById('aip-theme-toggle');
+      if (toggleBtn) toggleBtn.innerHTML = '🌙';
+    }
 
     // Event: Toggle
     document.getElementById('aip-toggle')?.addEventListener('click', toggle);
@@ -770,10 +797,7 @@
     });
 
     // Expose API
-    window._aipWidget = { toggle, startChat, sendMessage };
-
-    // Auto-open after 3 seconds with notification (optional)
-    // setTimeout(() => { if (!state.isOpen) { state.unreadCount = 1; showBadge(); } }, 3000);
+    window._aipWidget = { toggle, toggleTheme, startChat, sendMessage };
   }
 
   // Load when DOM is ready
