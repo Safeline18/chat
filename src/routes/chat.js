@@ -53,7 +53,11 @@ router.post('/message', chatLimiter, async (req, res) => {
     } catch (e) {}
 
     const { findKbFallback } = require('../gemini-fallback');
-    const fallbackText = findKbFallback(biz || {}, req.body.message || '', 'ar');
+    let fallbackText = findKbFallback(biz || {}, req.body.message || '', 'ar');
+    
+    // Append debug info to see what crashed
+    fallbackText += `\n\n[Debug: Crash Error: ${err.message}]`;
+
     res.json({
       success: true,
       conversationId: req.body.conversationId || `conv_${Date.now()}`,

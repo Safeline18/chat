@@ -159,7 +159,12 @@ async function buildRAGSystemPrompt(business, userMessage, detectedInfo, convers
   const businessName = business.name_ar || business.name;
   const businessDesc = business.description_ar || business.description;
 
-  const relevantChunks = await chunkDb.searchRelevant(bizId, userMessage, 6);
+  let relevantChunks = [];
+  try {
+    relevantChunks = await chunkDb.searchRelevant(bizId, userMessage, 6);
+  } catch (e) {
+    console.warn('⚠️ MongoDB RAG query warning:', e.message);
+  }
 
   let ragContext = '';
   if (relevantChunks && relevantChunks.length > 0) {
