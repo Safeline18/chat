@@ -160,8 +160,9 @@ async function initDatabase() {
 
   if (!cachedPromise) {
     cachedPromise = mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 30000,
+      serverSelectionTimeoutMS: 8000,
+      socketTimeoutMS: 45000,
+      bufferCommands: false,
     }).then(async (m) => {
       console.log('✅ MongoDB connected:', m.connection.host);
       try { await seedDemoData(); } catch (e) {}
@@ -169,7 +170,7 @@ async function initDatabase() {
     }).catch(err => {
       cachedPromise = null;
       console.error('❌ MongoDB connection failed:', err.message);
-      return null;
+      throw err;
     });
   }
 
