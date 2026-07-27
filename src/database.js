@@ -82,6 +82,15 @@ const MessageSchema = new mongoose.Schema({
 
 MessageSchema.index({ conversation_id: 1, created_at: 1 });
 
+const AdminSchema = new mongoose.Schema({
+  _id: { type: String, default: 'admin_primary' },
+  username: { type: String, default: 'admin' },
+  password: { type: String, default: 'admin123' },
+  updated_at: { type: Date, default: Date.now }
+});
+
+const Admin = mongoose.model('Admin', AdminSchema);
+
 const AnalyticsSchema = new mongoose.Schema({
   _id: { type: String, default: uuidv4 },
   business_id: { type: String, ref: 'Business' },
@@ -507,9 +516,26 @@ const leads = {
   }
 };
 
+const adminDb = {
+  async getCredentials() {
+    let admin = await Admin.findById('admin_primary').lean();
+    if (!admin) {
+      admin = await Admin.create({ _id: 'admin_primary', username: 'admin', password: 'admin123' });
+    }
+    return admin;
+  },
+  async updateCredentials(username, password) {
+    return Admin.findByIdAndUpdate(
+      'admin_primary',
+      { username, password, updated_at: new Date() },
+      { upsert: true, new: true }
+    );
+  }
+};
+
 // Helper: get raw db (for legacy compat in webhooks)
 function getDb() {
-  return { Business, Integration, Conversation, Message, Analytics, KnowledgeChunk, Lead, ConversationSummary };
+  return { Business, Integration, Conversation, Message, Analytics, KnowledgeChunk, Lead, ConversationSummary, Admin };
 }
 
 module.exports = {
@@ -522,6 +548,7 @@ module.exports = {
   analytics,
   knowledgeChunks,
   leads,
+  adminDb,
   // Export models directly
   Business,
   Integration,
@@ -530,5 +557,6 @@ module.exports = {
   Analytics,
   KnowledgeChunk,
   Lead,
-  ConversationSummary
+  ConversationSummary,
+  Admin
 };

@@ -157,7 +157,7 @@ function classifyContentType(url, text) {
 
 async function processWebsiteAndGenerateRAG(baseUrl, businessId) {
   const { knowledgeChunks: chunkDb, businesses: bizDb } = require('../database');
-  const pages = await crawlWebsite(baseUrl, 10);
+  const pages = await crawlWebsite(baseUrl, 25);
 
   if (!pages.length) {
     throw new Error('Could not access website or extract content. Please check the URL.');

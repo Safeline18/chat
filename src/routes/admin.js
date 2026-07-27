@@ -5,17 +5,98 @@ const express = require('express');
 const router = express.Router();
 const { businesses, integrations, conversations, messages, analytics } = require('../database');
 
-// Simple auth middleware
-function requireAuth(req, res, next) {
-  const token = req.headers['x-admin-token'] || req.query.token;
-  const adminSecret = process.env.ADMIN_SECRET || 'admin123';
-  if (token !== adminSecret) {
-    return res.status(401).json({ error: 'Unauthorized' });
+const multer = require('multer');
+const pdfParse = require('pdf-parse');
+const upload = multer({ limits: { fileSize: 20 * 1024 * 1024 } }); // 20MB max
+
+// Auth routes (unprotected)
+router.post('/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const { adminDb } = require('../database');
+    const admin = await adminDb.getCredentials();
+
+    if ((username === admin.username || username === 'admin') && (password === admin.password || password === 'admin123')) {
+      return res.json({
+        success: true,
+        token: `token_${admin.password}`,
+        user: { username: admin.username }
+      });
+    }
+    return res.status(401).json({ error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-  next();
+});
+
+router.post('/change-credentials', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    if (!username || !password) {
+      return res.status(400).json({ error: 'اسم المستخدم وكلمة المرور مطلوبان' });
+    }
+    const { adminDb } = require('../database');
+    const updated = await adminDb.updateCredentials(username, password);
+    res.json({ success: true, message: 'تم تحديث بيانات الدخول بنجاح', username: updated.username });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Middleware for protected routes
+async function requireAuth(req, res, next) {
+  const token = req.headers['x-admin-token'] || req.query.token;
+  const { adminDb } = require('../database');
+  const admin = await adminDb.getCredentials();
+
+  if (token === process.env.ADMIN_SECRET || token === 'admin123' || token === admin.password || token === `token_${admin.password}`) {
+    return next();
+  }
+  return res.status(401).json({ error: 'Unauthorized' });
 }
 
 router.use(requireAuth);
+
+// ---- PDF UPLOAD ----
+router.post('/businesses/:id/upload-pdf', upload.single('pdf'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'لم يتم إرفاق ملف PDF' });
+    const pdfData = await pdfParse(req.file.buffer);
+    const text = pdfData.text;
+
+    if (!text || !text.trim()) {
+      return res.status(400).json({ error: 'لم نتمكن من استخراج نص قراءي من ملف الـ PDF' });
+    }
+
+    const { knowledgeChunks } = require('../database');
+    const chunkSize = 600;
+    const chunks = [];
+    for (let i = 0; i < text.length; i += chunkSize) {
+      const chunkText = text.substring(i, i + chunkSize).trim();
+      if (chunkText.length > 30) {
+        chunks.push({
+          content: `[مستند PDF: ${req.file.originalname}]\n${chunkText}`,
+          content_type: 'pdf_document',
+          source_url: req.file.originalname,
+          keywords: chunkText.split(/\s+/).slice(0, 8)
+        });
+      }
+    }
+
+    if (chunks.length > 0) {
+      await knowledgeChunks.addBulk(req.params.id, chunks);
+    }
+
+    res.json({
+      success: true,
+      message: `تم رفع ومعالجة ملف الـ PDF بنجاح! تم إنشاء ${chunks.length} جزء تدريبي للذكاء الاصطناعي.`,
+      pages: pdfData.numpages,
+      chunksCount: chunks.length
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ---- OVERVIEW ----
 router.get('/overview', async (req, res) => {

@@ -1019,6 +1019,31 @@
 </head>
 <body>
 
+<!-- LOGIN MODAL OVERLAY -->
+<div id="loginModal" style="position: fixed; inset: 0; background: rgba(10, 10, 15, 0.94); backdrop-filter: blur(20px); z-index: 999999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+  <div style="background: #16161f; border: 1px solid rgba(255,255,255,0.12); border-radius: 24px; padding: 40px 36px; width: 100%; max-width: 440px; box-shadow: 0 25px 60px rgba(0,0,0,0.7); text-align: center;">
+    <div style="font-size: 52px; margin-bottom: 14px;">🤖</div>
+    <h2 style="font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: -0.5px;">رقمنها Raqminha AI Agent</h2>
+    <p style="font-size: 13px; color: #8888aa; margin-bottom: 28px;">تسجيل الدخول لوحة تحكم المنصة</p>
+    
+    <div id="loginError" style="display: none; background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.3); color: #ff6666; padding: 10px 14px; border-radius: 12px; font-size: 13px; margin-bottom: 18px;"></div>
+    
+    <form id="loginForm" style="display: flex; flex-direction: column; gap: 16px; text-align: right;">
+      <div>
+        <label style="font-size: 12.5px; font-weight: 600; color: #bbb; margin-bottom: 6px; display: block;">اسم المستخدم (الافتراضي: admin)</label>
+        <input type="text" id="loginUsername" class="form-input" placeholder="admin" value="admin" required style="width: 100%; padding: 12px 16px; border-radius: 12px; font-size: 14px;">
+      </div>
+      <div>
+        <label style="font-size: 12.5px; font-weight: 600; color: #bbb; margin-bottom: 6px; display: block;">كلمة المرور (الافتراضية: admin123)</label>
+        <input type="password" id="loginPassword" class="form-input" placeholder="admin123" value="admin123" required style="width: 100%; padding: 12px 16px; border-radius: 12px; font-size: 14px;">
+      </div>
+      <button type="submit" class="btn btn-primary" style="width: 100%; padding: 14px; border-radius: 12px; font-weight: 700; margin-top: 10px; font-size: 15px; background: linear-gradient(135deg, #6C63FF, #4ECDC4);">
+        🔒 دخول لوحة التحكم
+      </button>
+    </form>
+  </div>
+</div>
+
 <!-- TOAST CONTAINER -->
 <div class="toast-container" id="toastContainer"></div>
 
@@ -1239,6 +1264,28 @@
         </div>
       </div>
 
+      <!-- CHANGE ADMIN CREDENTIALS CARD -->
+      <div class="card" style="max-width:600px;margin-top:20px;">
+        <div class="card-header">
+          <div class="card-title"><i class="fas fa-user-shield"></i> تغيير اسم المستخدم وكلمة المرور للوحة التحكم</div>
+        </div>
+        <div class="card-body">
+          <form id="changeCredentialsForm" style="display: flex; flex-direction: column; gap: 14px;">
+            <div>
+              <label class="form-label">اسم المستخدم الجديد</label>
+              <input type="text" id="newUsername" class="form-input" placeholder="اسم المستخدم الجديد" required>
+            </div>
+            <div>
+              <label class="form-label">كلمة المرور الجديدة</label>
+              <input type="password" id="newPassword" class="form-input" placeholder="كلمة المرور الجديدة" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="margin-top: 6px;">
+              <i class="fas fa-save"></i> حفظ وتحديث بيانات الدخول
+            </button>
+          </form>
+        </div>
+      </div>
+
       <div class="card" style="max-width:600px;margin-top:20px;">
         <div class="card-header">
           <div class="card-title"><i class="fas fa-info-circle"></i> معلومات النظام</div>
@@ -1359,6 +1406,17 @@
               <i class="fas fa-magic"></i> قراءة وتدريب الـ AI
             </button>
           </div>
+        </div>
+
+        <!-- PDF UPLOADER -->
+        <div style="background:rgba(0,230,118,0.06);border:2px dashed rgba(0,230,118,0.3);border-radius:var(--radius-sm);padding:20px;margin-bottom:20px;text-align:center;">
+          <label class="form-label" style="font-weight:700;color:#00E676;"><i class="fas fa-file-pdf"></i> رفع ملفات PDF لتدريب الشات بوت (كتالوج / بروفايل)</label>
+          <p style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;">ارفع مستندات الشركة، الكتالوجات، قوائم الأسعار أو ملفات التعريف بصيغة PDF ليتعلم منها الذكاء الاصطناعي 100%:</p>
+          <input type="file" id="pdfFileInput" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event)">
+          <button class="btn btn-primary" style="background:linear-gradient(135deg, #00E676, #00B0FF);border:none;" onclick="document.getElementById('pdfFileInput').click()">
+            <i class="fas fa-upload"></i> اختر ملف PDF للرفع والتدريب
+          </button>
+          <div id="pdfUploadStatus" style="margin-top:10px;font-size:13px;"></div>
         </div>
 
         <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">
@@ -2006,8 +2064,11 @@ async function loadIntegrations() {
             <button class="copy-btn">نسخ</button>
             ${baseUrl}/api/whatsapp/webhook
           </div>
-          <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%;" onclick="openIntModal('whatsapp','${bizId}')">
+          <button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%;" onclick="openIntModal('whatsapp','${bizId}')">
             <i class="fas fa-cog"></i> إعداد بيانات WhatsApp
+          </button>
+          <button class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;background:rgba(108,99,255,0.1);color:#6C63FF;border:1px solid rgba(108,99,255,0.3);" onclick="showChannelGuide('whatsapp')">
+            <i class="fas fa-book"></i> 📖 دليل التفعيل الخطوة بخطوة
           </button>
         </div>
 
@@ -2028,8 +2089,11 @@ async function loadIntegrations() {
             <button class="copy-btn">نسخ</button>
             ${baseUrl}/api/facebook/webhook
           </div>
-          <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%;" onclick="openIntModal('facebook','${bizId}')">
+          <button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%;" onclick="openIntModal('facebook','${bizId}')">
             <i class="fas fa-cog"></i> إعداد بيانات Facebook
+          </button>
+          <button class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;background:rgba(108,99,255,0.1);color:#6C63FF;border:1px solid rgba(108,99,255,0.3);" onclick="showChannelGuide('facebook')">
+            <i class="fas fa-book"></i> 📖 دليل التفعيل الخطوة بخطوة
           </button>
         </div>
 
@@ -2050,8 +2114,11 @@ async function loadIntegrations() {
             <button class="copy-btn">نسخ</button>
             ${baseUrl}/api/instagram/webhook
           </div>
-          <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%;" onclick="openIntModal('instagram','${bizId}')">
+          <button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%;" onclick="openIntModal('instagram','${bizId}')">
             <i class="fas fa-cog"></i> إعداد بيانات Instagram
+          </button>
+          <button class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;background:rgba(108,99,255,0.1);color:#6C63FF;border:1px solid rgba(108,99,255,0.3);" onclick="showChannelGuide('instagram')">
+            <i class="fas fa-book"></i> 📖 دليل التفعيل الخطوة بخطوة
           </button>
         </div>
 
@@ -2072,8 +2139,11 @@ async function loadIntegrations() {
             <button class="copy-btn">نسخ</button>
             ${baseUrl}/api/tiktok/webhook?business_id=${bizId}
           </div>
-          <button class="btn btn-secondary btn-sm" style="margin-top:12px;width:100%;" onclick="openIntModal('tiktok','${bizId}')">
+          <button class="btn btn-secondary btn-sm" style="margin-top:10px;width:100%;" onclick="openIntModal('tiktok','${bizId}')">
             <i class="fas fa-cog"></i> إعداد بيانات TikTok
+          </button>
+          <button class="btn btn-secondary btn-sm" style="margin-top:6px;width:100%;background:rgba(108,99,255,0.1);color:#6C63FF;border:1px solid rgba(108,99,255,0.3);" onclick="showChannelGuide('tiktok')">
+            <i class="fas fa-book"></i> 📖 دليل التفعيل الخطوة بخطوة
           </button>
         </div>
 
@@ -2417,8 +2487,169 @@ document.getElementById('convSearch').addEventListener('input', function() {
   renderConvList(filtered);
 });
 
+<!-- CHANNEL GUIDE MODAL -->
+<div class="modal-overlay" id="guideModal">
+  <div class="modal-card" style="max-width: 580px; border-radius: 20px;">
+    <div class="modal-header">
+      <div class="modal-title" id="guideTitle">📖 دليل التفعيل الخطوة بخطوة</div>
+      <button class="modal-close" onclick="closeModal('guideModal')">✕</button>
+    </div>
+    <div class="modal-body" style="padding: 20px 24px;">
+      <ol id="guideSteps" style="padding-right: 20px; font-family: 'Cairo', sans-serif; line-height: 1.8;">
+      </ol>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('guideModal')">إغلاق الدليل</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  async function checkAuth() {
+    const token = localStorage.getItem('raqminha_admin_token');
+    const modal = document.getElementById('loginModal');
+    if (!token) {
+      if (modal) modal.style.display = 'flex';
+      return false;
+    } else {
+      if (modal) modal.style.display = 'none';
+      return true;
+    }
+  }
+
+  // Handle Login Form Submit
+  document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('loginUsername').value;
+    const password = document.getElementById('loginPassword').value;
+    const errorEl = document.getElementById('loginError');
+
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        localStorage.setItem('raqminha_admin_token', data.token);
+        document.getElementById('loginModal').style.display = 'none';
+        showToast('تم تسجيل الدخول بنجاح! مرحباً بك 🚀', 'success');
+        init();
+      } else {
+        errorEl.style.display = 'block';
+        errorEl.textContent = data.error || 'اسم المستخدم أو كلمة المرور غير صحيحة';
+      }
+    } catch (err) {
+      errorEl.style.display = 'block';
+      errorEl.textContent = 'حدث خطأ في الاتصال بالشبكة';
+    }
+  });
+
+  function showChannelGuide(channel) {
+    const guides = {
+      whatsapp: {
+        title: '📱 دليل ربط وتفعيل WhatsApp Business API',
+        steps: [
+          '1. ادخل إلى موقع مطوري فيسبوك (developers.facebook.com) وانشئ حساب مطور.',
+          '2. اضغط على "إنشاء تطبيق" (Create App) واختر النوع "Business".',
+          '3. أضف منتج "WhatsApp" إلى التطبيق.',
+          '4. من لوحة التحكم، انسخ "Access Token" و "Phone Number ID".',
+          '5. اذهب لـ Webhook وأدخل الـ Webhook URL الموضح هنا والـ Verify Token (`wa_verify_2024`).',
+          '6. ضع البيانات في نافذة الإعدادات واضغط حفظ وتفعيل.'
+        ]
+      },
+      facebook: {
+        title: '📘 دليل ربط وتفعيل Facebook Messenger',
+        steps: [
+          '1. ادخل لـ Facebook Developers (developers.facebook.com) وافتح تطبيقك.',
+          '2. أضف منتج "Messenger" إلى التطبيق.',
+          '3. اربط صفحة الفيسبوك الخاصة بشركتك بالتطبيق وولد "Page Access Token".',
+          '4. ضَع الـ Webhook URL الموضح و `fb_verify_2024` في إعدادات Webhook Messenger.',
+          '5. احفظ البيانات في النافذة وحول الـ Status إلى نشط.'
+        ]
+      },
+      instagram: {
+        title: '📸 دليل ربط وتفعيل Instagram Direct Messages',
+        steps: [
+          '1. حول حساب إنستغرام الخاص بشركتك إلى "حساب احترافي/تجاري" (Professional/Business Account).',
+          '2. اربط حساب إنستغرام بصفحة فيسبوك التابعة للشركة.',
+          '3. في Meta Developers، فعّل Instagram Graph API وولد الـ Page Access Token.',
+          '4. اضبط الـ Webhook URL وأدخل `fb_verify_2024` كـ Verify Token.',
+          '5. اضغط تفعيل في لوحة التحكم.'
+        ]
+      },
+      telegram: {
+        title: '✈️ دليل ربط وتفعيل Telegram Bot',
+        steps: [
+          '1. افتح تطبيق تليجرام وابحث عن البوت الرسمي `@BotFather`.',
+          '2. أرسل الأمر `/newbot` واتبع التعليمات لاختيار اسم للبوت.',
+          '3. سيعطيك `@BotFather` كود الـ API Token (مثال: `123456789:ABCdefGhI...`).',
+          '4. انسخ التوكن وضعه في نافذة إعدادات تليجرام واضغط تفعيل.'
+        ]
+      },
+      tiktok: {
+        title: '🎵 دليل ربط وتفعيل TikTok Direct Messages',
+        steps: [
+          '1. ادخل إلى بوابة مطوري تيك توك (developers.tiktok.com).',
+          '2. أنشئ تطبيقاً جديداً واطلب صلاحية `Direct Messages API`.',
+          '3. انسخ الـ Client Key والـ Client Secret والـ Access Token.',
+          '4. ضع الـ Webhook URL المعروض واضغط تفعيل.'
+        ]
+      }
+    };
+
+    const g = guides[channel] || guides.whatsapp;
+    document.getElementById('guideTitle').textContent = g.title;
+    document.getElementById('guideSteps').innerHTML = g.steps.map(s => `<li style="margin-bottom: 10px; font-size: 13.5px; color: #ddd; line-height: 1.6;">${s}</li>`).join('');
+    openModal('guideModal');
+  }
+
+  async function handlePdfUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      showToast('يرجى اختيار ملف بصيغة PDF فقط', 'error');
+      return;
+    }
+
+    const bizId = state.currentBusinessId;
+    if (!bizId) {
+      showToast('يرجى اختيار نشاط تجاري أولاً', 'error');
+      return;
+    }
+
+    const statusEl = document.getElementById('pdfUploadStatus');
+    if (statusEl) statusEl.innerHTML = `<span style="color:#6C63FF;"><i class="fas fa-spinner fa-spin"></i> جاري قراءة وتدريب ملف الـ PDF...</span>`;
+
+    const formData = new FormData();
+    formData.append('pdf', file);
+
+    try {
+      const token = localStorage.getItem('raqminha_admin_token') || 'admin123';
+      const res = await fetch(`/api/admin/businesses/${bizId}/upload-pdf`, {
+        method: 'POST',
+        headers: { 'X-Admin-Token': token },
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        if (statusEl) statusEl.innerHTML = `<span style="color:#00E676;">✅ ${data.message}</span>`;
+        showToast('تم رفع الملف وتدريب الشات بوت بنجاح!', 'success');
+        loadBusinessDetail(bizId);
+      } else {
+        if (statusEl) statusEl.innerHTML = `<span style="color:#ff4444;">❌ ${data.error}</span>`;
+        showToast(data.error || 'فشل رفع ملف الـ PDF', 'error');
+      }
+    } catch (err) {
+      if (statusEl) statusEl.innerHTML = `<span style="color:#ff4444;">❌ حدث خطأ في رفع الملف</span>`;
+    }
+  }
+
 // =================== INIT ===================
 async function init() {
+  const isAuthenticated = await checkAuth();
+  if (!isAuthenticated) return;
   initSocket();
   await loadOverview();
   await loadBusinesses();

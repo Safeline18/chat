@@ -17,6 +17,8 @@
     "helmet": "^7.1.0",
     "mongoose": "^9.8.0",
     "morgan": "^1.10.0",
+    "multer": "^2.2.0",
+    "pdf-parse": "^2.4.5",
     "socket.io": "^4.7.4",
     "uuid": "^9.0.1"
   },
