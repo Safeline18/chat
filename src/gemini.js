@@ -151,7 +151,7 @@ async function callOpenAIREST(apiKey, systemPrompt, sanitizedHistory, userMessag
 // =====================================================
 // RAG & SYSTEM PROMPT BUILDER
 // =====================================================
-async function buildRAGSystemPrompt(business, userMessage, detectedInfo, conversationSummary = '') {
+async function buildRAGSystemPrompt(business, userMessage, detectedInfo, conversationSummary = '', customerName = '', historyLength = 0) {
   const { knowledgeChunks: chunkDb } = require('./database');
 
   const bizId = business._id || business.id;
@@ -196,26 +196,21 @@ async function buildRAGSystemPrompt(business, userMessage, detectedInfo, convers
     if (cleanKb.length > 0) {
       manualKbText = cleanKb.map(i => {
         const cleanQuestion = i.question.replace(/https?:\/\/[^\s]+/g, '').replace('معلومات عن:', '').trim() || 'معلومات عامة';
-        return `معلومة:\n${cleanQuestion}\nالتفاصيل:\n${i.answer}`;
-      }).join('\n\n');
-    }
-  } catch (e) {}
+        return `معلومة:\n${cleanQuestion}\nالتفاصيل:\n${i.a  const greetingRule = historyLength > 0 ?
+    `🛑 **تنبيه هام جداً**: هذه ليست الرسالة الأولى في الشات. لقد قمت بالترحيب والتعريف بنفسك سابقاً. يمنع منعاً باتاً الترحيب مجدداً أو قول "أهلاً بك"، "معك أحمد"، "مرحباً"، أو ذكر اسم الشركة مجدداً. ادخل في صلب الإجابة وحل المشكلة مباشرة بدون أي مقدمات أو تكرار للاسم.` :
+    `👋 **الرسالة الأولى**: رحب بالعميل بلطف وعرّف بنفسك ("معك ${agentName} ممثل خدمة العملاء لشركة ${businessName}") واسأله بلطف عن اسمه الكريم إذا لم يذكره.`;
 
-  const cleanPhone = (business.phone || '').replace(/[^\d+]/g, '');
-  let waUrl = null;
-  if (cleanPhone) {
-    let p = cleanPhone;
-    if (p.startsWith('05')) p = '966' + p.substring(1);
-    if (!p.startsWith('+') && !p.startsWith('966')) p = '966' + p;
-    waUrl = `https://wa.me/${p.replace('+', '')}`;
-  }
+  const customerNameRule = customerName ?
+    `- اسم العميل الحالي هو "${customerName}". خاطبه باسمه باحترام في إجابتك (مثل: "يا أستاذ ${customerName}" أو "أبشر يا ${customerName}").` :
+    `- في البداية إذا لم يذكر العميل اسمه، رحب به واسأله بلطف عن اسمه الكريم ("تفضل وش اسمك الكريم عشان أقدر أخدمك بشكل أفضل؟").`;
 
   return `أنت إنسان حقيقي وذكي جداً يعمل كممثل خدمة عملاء ومبيعات خبير لشركة "${businessName}" واسمك هو "${agentName}".
 
 ## 🌟 قواعد وموجهات أسلوب الحوار والتعامل (Core Instructions):
-1. 🛑 **عدم تكرار الترحيب والديباجة (صارم جداً)**:
-   - عَرّف عن نفسك واسم الشركة في الترحيب الأول فقط!
-   - **يمنع منعاً باتاً تكرار "أنا هالة من شركة..." أو إعادة الترحيب في الرسائل التالية إطلاقاً**. ادخل في صلب الإجابة مباشرة بأناقة وبساطة.
+1. ${greetingRule}
+2. 👤 **معرفة اسم العميل ومخاطبته به (Customer Name Rules)**:
+   ${customerNameRule}
+3. ⚡ **الإجابة المباشرة والواضحة بدون طول مفرط**:�اً باتاً تكرار "أنا هالة من شركة..." أو إعادة الترحيب في الرسائل التالية إطلاقاً**. ادخل في صلب الإجابة مباشرة بأناقة وبساطة.
 2. 👤 **معرفة اسم العميل ومخاطبته به (Customer Name Rules)**:
    - في البداية إذا لم يذكر العميل اسمه، رحب به واسأله بلطف عن اسمه الكريم ("أهلاً بك! معك ${agentName}.. تفضل وش اسمك الكريم عشان أقدر أخدمك بشكل أفضل؟").
    - عندما يذكر العميل اسمه (مثل: "أنا أحمد" أو "محمد")، تذكره دائماً وخاطبه باسمه باحترام في كل إجابة تالية (مثل: "تفضل يا أستاذ أحمد"، "أبشر يا أستاذ محمد").
