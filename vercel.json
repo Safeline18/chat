@@ -6,7 +6,34 @@
       "use": "@vercel/node"
     }
   ],
+  "headers": [
+    {
+      "source": "/widget/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "*"
+        },
+        {
+          "key": "Cross-Origin-Resource-Policy",
+          "value": "cross-origin"
+        }
+      ]
+    }
+  ],
   "routes": [
+    {
+      "src": "/widget/(.*)",
+      "dest": "/widget/$1"
+    },
     {
       "src": "/(.*)",
       "dest": "/api/index.js"
