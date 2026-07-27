@@ -49,9 +49,9 @@
 
   // =================== STYLES ===================
   const styles = `
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap');
 
-    #aip-widget * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', 'Inter', sans-serif; }
+    #aip-widget * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', 'Outfit', sans-serif; }
 
     #aip-widget {
       position: fixed;
@@ -63,65 +63,63 @@
 
     /* TOGGLE BUTTON */
     #aip-toggle {
-      width: 60px; height: 60px;
+      width: 62px; height: 62px;
       border-radius: 50%;
       border: none;
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 0 rgba(108,99,255,0.4);
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 12px 36px rgba(79, 70, 229, 0.35), 0 0 0 0 rgba(124, 58, 237, 0.4);
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
       position: relative;
       animation: aip-pulse 3s infinite;
       outline: none;
     }
 
-    #aip-toggle:hover { transform: scale(1.1); box-shadow: 0 12px 40px rgba(0,0,0,0.35); }
-    #aip-toggle:active { transform: scale(0.95); }
+    #aip-toggle:hover { transform: scale(1.08) rotate(4deg); box-shadow: 0 16px 45px rgba(79, 70, 229, 0.45); }
+    #aip-toggle:active { transform: scale(0.94); }
 
     @keyframes aip-pulse {
-      0%, 100% { box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 0 rgba(108,99,255,0.4); }
-      50% { box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 0 0 10px rgba(108,99,255,0); }
+      0%, 100% { box-shadow: 0 12px 36px rgba(79, 70, 229, 0.35), 0 0 0 0 rgba(124, 58, 237, 0.4); }
+      50% { box-shadow: 0 12px 36px rgba(79, 70, 229, 0.35), 0 0 0 12px rgba(124, 58, 237, 0); }
     }
 
-    .aip-toggle-icon { font-size: 26px; transition: all 0.3s ease; }
+    .aip-toggle-icon { font-size: 28px; transition: all 0.3s ease; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); }
     .aip-toggle-icon.hidden { display: none; }
 
     /* UNREAD BADGE */
     #aip-badge {
       position: absolute;
-      top: -4px; right: -4px;
-      background: #FF4444;
+      top: -2px; right: -2px;
+      background: linear-gradient(135deg, #EF4444, #DC2626);
       color: white;
       font-size: 11px;
-      font-weight: 700;
-      width: 20px; height: 20px;
+      font-weight: 800;
+      width: 22px; height: 22px;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       border: 2px solid white;
       display: none;
-      animation: aip-badge-in 0.3s ease;
+      box-shadow: 0 4px 10px rgba(239, 68, 68, 0.4);
     }
 
-    @keyframes aip-badge-in { from { transform: scale(0); } to { transform: scale(1); } }
-
-    /* CHAT WINDOW (DEFAULT LIGHT MODE) */
+    /* CHAT WINDOW (DEFAULT LIGHT LUXURY MODE) */
     #aip-window {
       position: absolute;
       ${WIDGET_POSITION.includes('right') ? 'right: 0;' : 'left: 0;'}
-      bottom: 76px;
-      width: 380px;
-      height: 580px;
-      background: #ffffff;
-      color: #1e1e2d;
-      border-radius: 20px;
+      bottom: 78px;
+      width: 390px;
+      height: 600px;
+      background: #FFFFFF;
+      color: #0F172A;
+      border-radius: 24px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.06);
-      transform: scale(0.9) translateY(20px);
+      box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
+      transform: scale(0.92) translateY(24px);
       opacity: 0;
       pointer-events: none;
-      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
       transform-origin: bottom right;
     }
 
@@ -131,29 +129,157 @@
       pointer-events: all;
     }
 
+    /* HEADER */
+    #aip-header {
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #06B6D4 100%);
+      box-shadow: 0 4px 20px rgba(79, 70, 229, 0.25);
+    }
+
+    .aip-header-glow {
+      position: absolute;
+      inset: 0;
+      opacity: 0.2;
+      background: radial-gradient(circle at 20% 50%, rgba(255,255,255,0.4), transparent);
+    }
+
+    .aip-avatar {
+      width: 46px; height: 46px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.35);
+      flex-shrink: 0;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .aip-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .aip-header-info { flex: 1; min-width: 0; }
+    .aip-header-name { font-size: 16px; font-weight: 800; color: white; margin-bottom: 2px; letter-spacing: -0.2px; }
+    .aip-header-status {
+      font-size: 12px;
+      color: rgba(255,255,255,0.85);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+    }
+
+    .aip-status-dot {
+      width: 8px; height: 8px;
+      background: #10B981;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
+      animation: aip-pulse-green 2s infinite;
+    }
+
+    @keyframes aip-pulse-green {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.9); }
+    }
+
+    .aip-close-btn {
+      width: 34px; height: 34px;
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 50%;
+      color: white;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 15px;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      backdrop-filter: blur(4px);
+    }
+
+    .aip-close-btn:hover { background: rgba(255,255,255,0.35); transform: scale(1.08); }
+
     /* MESSAGES (LIGHT DEFAULT) */
     #aip-messages {
       flex: 1;
       overflow-y: auto;
-      padding: 16px;
+      padding: 18px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      background: #f8f9fc;
+      gap: 12px;
+      background: #FAFAFC;
+    }
+
+    .aip-msg-avatar-sm {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: rgba(79, 70, 229, 0.1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+      overflow: hidden;
+      border: 1px solid rgba(79, 70, 229, 0.2);
+    }
+
+    .aip-bubble {
+      max-width: 100%;
+      padding: 13px 17px;
+      border-radius: 18px;
+      font-size: 14.5px;
+      line-height: 1.65;
+      word-wrap: break-word;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      white-space: normal;
     }
 
     .aip-bubble-bot {
-      background: #ffffff;
-      color: #2b2b36;
-      border: 1px solid #e2e4ed;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      background: #FFFFFF;
+      color: #1E293B;
+      border: 1px solid #E2E8F0;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.03);
       border-bottom-left-radius: 4px;
     }
 
+    .aip-bubble-user {
+      background: linear-gradient(135deg, #4F46E5, #7C3AED);
+      color: white;
+      box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+      border-bottom-right-radius: 4px;
+    }
+
+    .aip-wa-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #10B981, #059669);
+      color: white !important;
+      padding: 11px 20px;
+      border-radius: 30px;
+      text-decoration: none !important;
+      font-weight: 700;
+      font-size: 14px;
+      margin: 10px 0 4px 0;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .aip-wa-btn:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 10px 25px rgba(16, 185, 129, 0.45); }
+
+    .aip-link {
+      color: #2563EB !important;
+      text-decoration: underline;
+      font-weight: 600;
+    }
+
     #aip-input-area {
-      padding: 12px 14px;
-      background: #ffffff;
-      border-top: 1px solid #eef0f6;
+      padding: 14px 16px;
+      background: #FFFFFF;
+      border-top: 1px solid #F1F5F9;
       display: flex;
       align-items: flex-end;
       gap: 10px;
@@ -162,23 +288,42 @@
 
     #aip-input {
       flex: 1;
-      background: #f4f5f9;
-      border: 1px solid #dce0ed;
-      border-radius: 14px;
-      color: #1e1e2d;
-      padding: 10px 14px;
-      font-size: 13.5px;
-      font-family: 'Cairo', 'Inter', sans-serif;
+      background: #F8FAFC;
+      border: 1px solid #E2E8F0;
+      border-radius: 16px;
+      color: #0F172A;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-family: 'Cairo', 'Outfit', sans-serif;
       resize: none;
-      min-height: 42px;
-      max-height: 100px;
+      min-height: 44px;
+      max-height: 110px;
       outline: none;
-      transition: border-color 0.2s;
+      transition: all 0.2s ease;
       direction: ${isRTL() ? 'rtl' : 'ltr'};
       line-height: 1.5;
     }
 
-    #aip-input::placeholder { color: #8c93a6; }
+    #aip-input:focus { border-color: #4F46E5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12); background: #FFFFFF; }
+    #aip-input::placeholder { color: #94A3B8; }
+
+    #aip-send {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      color: white;
+      background: linear-gradient(135deg, #4F46E5, #7C3AED);
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      flex-shrink: 0;
+    }
+
+    #aip-send:hover { transform: scale(1.1) rotate(-5deg); box-shadow: 0 6px 18px rgba(79, 70, 229, 0.5); }
+    #aip-send:active { transform: scale(0.95); }
+    #aip-send:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
     #aip-welcome {
       position: absolute;
@@ -187,43 +332,70 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 30px;
-      background: #ffffff;
+      padding: 32px;
+      background: #FFFFFF;
       text-align: center;
       z-index: 10;
     }
 
-    .aip-welcome-name { font-size: 20px; font-weight: 800; color: #1e1e2d; margin-bottom: 10px; }
-    .aip-welcome-msg { font-size: 14px; color: #555566; line-height: 1.6; margin-bottom: 24px; }
+    .aip-welcome-avatar {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
+      margin-bottom: 20px;
+      position: relative;
+      box-shadow: 0 10px 25px rgba(79, 70, 229, 0.2);
+    }
+
+    .aip-welcome-name { font-size: 22px; font-weight: 800; color: #0F172A; margin-bottom: 10px; letter-spacing: -0.3px; }
+    .aip-welcome-msg { font-size: 14.5px; color: #64748B; line-height: 1.65; margin-bottom: 26px; }
+
+    .aip-start-btn {
+      padding: 13px 32px;
+      border-radius: 50px;
+      border: none;
+      color: white;
+      font-size: 14.5px;
+      font-weight: 700;
+      font-family: 'Cairo', 'Outfit', sans-serif;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 6px 22px rgba(79, 70, 229, 0.4);
+      background: linear-gradient(135deg, #4F46E5, #7C3AED);
+    }
+
+    .aip-start-btn:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 10px 28px rgba(79, 70, 229, 0.55); }
 
     #aip-footer {
-      padding: 10px;
+      padding: 11px;
       text-align: center;
-      font-size: 11px;
-      color: #777788;
-      background: #ffffff;
-      border-top: 1px solid #eef0f6;
+      font-size: 11.5px;
+      color: #64748B;
+      background: #FFFFFF;
+      border-top: 1px solid #F1F5F9;
       flex-shrink: 0;
+      font-weight: 600;
     }
 
     /* DARK MODE STYLES (.aip-dark) */
     #aip-window.aip-dark {
-      background: #0f0f17;
-      color: #f0f0f8;
-      box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.08);
+      background: #0B0F19;
+      color: #F8FAFC;
+      box-shadow: 0 25px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08);
     }
-    #aip-window.aip-dark #aip-messages { background: #0f0f17; }
-    #aip-window.aip-dark #aip-welcome { background: #0f0f17; }
-    #aip-window.aip-dark .aip-welcome-name { color: #ffffff !important; }
-    #aip-window.aip-dark .aip-welcome-msg { color: rgba(255,255,255,0.6) !important; }
+    #aip-window.aip-dark #aip-messages { background: #0B0F19; }
+    #aip-window.aip-dark #aip-welcome { background: #0B0F19; }
+    #aip-window.aip-dark .aip-welcome-name { color: #FFFFFF !important; }
+    #aip-window.aip-dark .aip-welcome-msg { color: #94A3B8 !important; }
     #aip-window.aip-dark .aip-bubble-bot {
-      background: rgba(255,255,255,0.07);
-      color: #e8e8f0;
+      background: #111827;
+      color: #F1F5F9;
       border: 1px solid rgba(255,255,255,0.08);
     }
-    #aip-window.aip-dark #aip-input-area { background: #13131c; border-top: 1px solid rgba(255,255,255,0.06); }
-    #aip-window.aip-dark #aip-input { background: rgba(255,255,255,0.06); color: #e8e8f0; border: 1px solid rgba(255,255,255,0.1); }
-    #aip-window.aip-dark #aip-footer { background: #13131c; color: rgba(255,255,255,0.4); border-top: 1px solid rgba(255,255,255,0.04); }
+    #aip-window.aip-dark #aip-input-area { background: #111827; border-top: 1px solid rgba(255,255,255,0.06); }
+    #aip-window.aip-dark #aip-input { background: #1F2937; color: #F8FAFC; border: 1px solid rgba(255,255,255,0.1); }
+    #aip-window.aip-dark #aip-footer { background: #111827; color: #94A3B8; border-top: 1px solid rgba(255,255,255,0.06); }
 
     #aip-messages::-webkit-scrollbar { width: 4px; }
     #aip-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
