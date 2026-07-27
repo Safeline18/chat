@@ -7,7 +7,14 @@
 function findKbFallback(business, userMessage, detectedLang) {
   let kb = [];
   try {
-    kb = typeof business.knowledge_base === 'string' ? JSON.parse(business.knowledge_base || '[]') : (business.knowledge_base || []);
+    const rawKb = typeof business.knowledge_base === 'string' ? JSON.parse(business.knowledge_base || '[]') : (business.knowledge_base || []);
+    kb = rawKb.filter(i => {
+      const q = (i.question || '').toLowerCase();
+      const a = (i.answer || '').toLowerCase();
+      if (q.includes('.woff') || q.includes('.js') || q.includes('.map') || q.includes('.json')) return false;
+      if (a.includes('woff2 file') || a.includes('font-family')) return false;
+      return true;
+    });
   } catch (e) {}
 
   const text = (userMessage || '').toLowerCase().trim();

@@ -186,8 +186,18 @@ async function buildRAGSystemPrompt(business, userMessage, detectedInfo, convers
   let manualKbText = '';
   try {
     const kb = typeof business.knowledge_base === 'string' ? JSON.parse(business.knowledge_base || '[]') : (business.knowledge_base || []);
-    if (kb.length > 0) {
-      manualKbText = kb.map(i => `معلومة:\n${i.question}\nالتفاصيل:\n${i.answer}`).join('\n\n');
+    const cleanKb = kb.filter(i => {
+      const q = (i.question || '').toLowerCase();
+      const a = (i.answer || '').toLowerCase();
+      if (q.includes('.woff') || q.includes('.js') || q.includes('.map') || q.includes('.json')) return false;
+      if (a.includes('woff2 file') || a.includes('font-family')) return false;
+      return true;
+    });
+    if (cleanKb.length > 0) {
+      manualKbText = cleanKb.map(i => {
+        const cleanQuestion = i.question.replace(/https?:\/\/[^\s]+/g, '').replace('معلومات عن:', '').trim() || 'معلومات عامة';
+        return `معلومة:\n${cleanQuestion}\nالتفاصيل:\n${i.answer}`;
+      }).join('\n\n');
     }
   } catch (e) {}
 
