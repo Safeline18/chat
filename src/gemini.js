@@ -258,19 +258,23 @@ async function generateResponse(business, conversationId, userMessage, channel =
 
   const systemPrompt = await buildRAGSystemPrompt(business, userMessage, detectedInfo, '', customerName, sanitizedHistory.length);
 
-  // Method 1: Try Gemini SDK
-  if (genAI) {
+  // Method 1: Try Groq AI (Llama-3.3-70b) - Free, Open, Ultra-Fast and highly smart in Arabic
+  if (!responseText && process.env.GROQ_API_KEY) {
+    try {
+      responseText = await callGroqREST(process.env.GROQ_API_KEY, systemPrompt, sanitizedHistory, userMessage);
+    } catch (gErr) {
+      console.warn('⚠️ Groq AI primary attempt failed:', gErr.message);
+    }
+  }
+
+  // Method 2: Try Gemini SDK
+  if (!responseText && genAI) {
     try {
       const candidateModels = [
         'gemini-1.5-flash',
-        'gemini-3.5-flash-lite',
-        'gemini-3.1-flash-lite',
-        'gemini-2.5-flash',
-        'gemini-1.5-flash-8b',
         'gemini-2.0-flash',
-        'gemini-flash-latest',
-        'gemini-pro-latest'
-      ].filter((v, i, a) => v && a.indexOf(v) === i);
+        'gemini-1.5-pro'
+      ];
 
       for (const modelName of candidateModels) {
         try {
@@ -285,7 +289,7 @@ async function generateResponse(business, conversationId, userMessage, channel =
           responseText = result.response.text();
           if (responseText) break;
         } catch (mErr) {
-          // Model retry
+          console.warn(`⚠️ Gemini model ${modelName} failed:`, mErr.message);
         }
       }
     } catch (err) {
@@ -293,21 +297,12 @@ async function generateResponse(business, conversationId, userMessage, channel =
     }
   }
 
-  // Method 2: Direct Gemini REST API fetch
+  // Method 3: Direct Gemini REST API fetch
   if (!responseText && apiKey) {
     try {
       responseText = await callGeminiREST(apiKey, systemPrompt, sanitizedHistory, userMessage);
     } catch (restErr) {
       console.warn('⚠️ Gemini REST API error:', restErr.message);
-    }
-  }
-
-  // Method 3: Groq AI API Fallback (Llama-3.3-70b)
-  if (!responseText && process.env.GROQ_API_KEY) {
-    try {
-      responseText = await callGroqREST(process.env.GROQ_API_KEY, systemPrompt, sanitizedHistory, userMessage);
-    } catch (gErr) {
-      console.warn('⚠️ Groq AI error:', gErr.message);
     }
   }
 
