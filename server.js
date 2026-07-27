@@ -276,7 +276,9 @@ app.get('/health', (req, res) => {
     status: 'OK',
     version: '1.0.0',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    hasGroqKey: !!process.env.GROQ_API_KEY,
+    hasGeminiKey: !!process.env.GEMINI_API_KEY
   });
 });
 
