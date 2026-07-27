@@ -1466,11 +1466,12 @@ let state = {
 
 // =================== API ===================
 async function api(path, method = 'GET', body = null) {
+  const token = localStorage.getItem('raqminha_admin_token') || localStorage.getItem('adminToken') || CONFIG.adminToken || 'admin123';
   const opts = {
     method,
     headers: {
       'Content-Type': 'application/json',
-      'X-Admin-Token': CONFIG.adminToken,
+      'X-Admin-Token': token,
     },
   };
   if (body) opts.body = JSON.stringify(body);
