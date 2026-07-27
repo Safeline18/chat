@@ -1464,6 +1464,40 @@ let CONFIG = {
   adminToken: localStorage.getItem('adminToken') || 'admin123',
 };
 
+// =================== SOCKET ===================
+let socket;
+function initSocket() {
+  if (typeof io === 'undefined') return;
+  const statusEl = document.getElementById('connectionStatus');
+
+  if (window.location.hostname.includes('vercel.app')) {
+    if (statusEl) statusEl.textContent = 'سحابي • Vercel';
+    return;
+  }
+
+  try {
+    socket = io(CONFIG.serverUrl, {
+      transports: ['websocket'],
+      reconnectionAttempts: 2,
+      timeout: 3000
+    });
+
+    socket.on('connect', () => {
+      if (statusEl) statusEl.textContent = 'متصل • نشط';
+    });
+
+    socket.on('connect_error', () => {
+      if (statusEl) statusEl.textContent = 'سحابي • Vercel';
+    });
+
+    socket.on('disconnect', () => {
+      if (statusEl) statusEl.textContent = 'سحابي • Vercel';
+    });
+  } catch (e) {
+    if (statusEl) statusEl.textContent = 'سحابي • Vercel';
+  }
+}
+
 let state = {
   businesses: [],
   conversations: [],
