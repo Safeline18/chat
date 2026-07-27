@@ -1468,8 +1468,8 @@ let CONFIG = {
 let socket;
 function initSocket() {
   if (typeof io === 'undefined') return;
-  const statusEl = document.getElementById('connectionStatus');
 
+  const statusEl = document.getElementById('connectionStatus');
   if (window.location.hostname.includes('vercel.app')) {
     if (statusEl) statusEl.textContent = 'سحابي • Vercel';
     return;
@@ -1493,64 +1493,6 @@ function initSocket() {
     socket.on('disconnect', () => {
       if (statusEl) statusEl.textContent = 'سحابي • Vercel';
     });
-  } catch (e) {
-    if (statusEl) statusEl.textContent = 'سحابي • Vercel';
-  }
-}
-
-let state = {
-  businesses: [],
-  conversations: [],
-  selectedConv: null,
-  currentEditBiz: null,
-  kbItems: [],
-};
-
-// =================== API ===================
-async function api(path, method = 'GET', body = null) {
-  const token = localStorage.getItem('raqminha_admin_token') || localStorage.getItem('adminToken') || CONFIG.adminToken || 'admin123';
-  const opts = {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Admin-Token': token,
-    },
-  };
-  if (body) opts.body = JSON.stringify(body);
-
-  const res = await fetch(CONFIG.serverUrl + path, opts);
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(err.error || 'Request failed');
-  }
-  return res.json();
-}
-
-// =================== SOCKET ===================
-let socket;
-function initSocket() {
-  if (typeof io === 'undefined') return;
-  try {
-    socket = io(CONFIG.serverUrl, {
-      transports: ['polling', 'websocket'],
-      reconnectionAttempts: 3,
-      timeout: 4000
-    });
-
-    socket.on('connect', () => {
-      const statusEl = document.getElementById('connectionStatus');
-      if (statusEl) statusEl.textContent = 'متصل • نشط';
-    });
-
-    socket.on('connect_error', () => {
-      const statusEl = document.getElementById('connectionStatus');
-      if (statusEl) statusEl.textContent = 'سحابي • Vercel';
-    });
-
-    socket.on('disconnect', () => {
-      const statusEl = document.getElementById('connectionStatus');
-      if (statusEl) statusEl.textContent = 'سحابي • Vercel';
-    });
 
     socket.on('new_message', (data) => {
       addToLiveFeed(data);
@@ -1561,7 +1503,7 @@ function initSocket() {
       if (badge) badge.textContent = parseInt(badge.textContent || '0') + 1;
     });
   } catch (e) {
-    console.warn('Socket init warning:', e);
+    if (statusEl) statusEl.textContent = 'سحابي • Vercel';
   }
 }
 
