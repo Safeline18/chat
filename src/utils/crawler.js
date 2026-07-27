@@ -87,7 +87,18 @@ async function fetchPage(url) {
     const title = titleMatch ? titleMatch[1].replace(/\s+/g, ' ').trim() : url;
     const cleanText = cleanHtmlText(html);
 
-    return { url, title, html, text: cleanText };
+    // Extract Logo / Favicon / Og:image
+    let logoUrl = null;
+    const ogImageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+    const faviconMatch = html.match(/<link[^>]*rel=["'](?:shortcut )?icon["'][^>]*href=["']([^"']+)["']/i);
+    const logoImgMatch = html.match(/<img[^>]*src=["']([^"']*(?:logo|icon|brand)[^"']*)["']/i);
+
+    const rawLogo = ogImageMatch ? ogImageMatch[1] : (faviconMatch ? faviconMatch[1] : (logoImgMatch ? logoImgMatch[1] : null));
+    if (rawLogo) {
+      try { logoUrl = new URL(rawLogo, url).href; } catch(e) {}
+    }
+
+    return { url, title, html, text: cleanText, logoUrl };
   } catch (e) {
     return null;
   }
@@ -302,6 +313,9 @@ Include 15+ comprehensive Q&As in "knowledge_base" covering services, pricing, o
     };
   }
 
+  // Find extracted logo URL if present
+  const logoUrl = pages.find(p => p.logoUrl)?.logoUrl || null;
+
   // Update Business in DB if businessId provided
   if (businessId) {
     await bizDb.update(businessId, {
@@ -316,6 +330,7 @@ Include 15+ comprehensive Q&As in "knowledge_base" covering services, pricing, o
       ai_status: 'active',
       agent_name_ar: profile.agent_name_ar || 'هالة',
       welcome_message_ar: profile.welcome_message_ar,
+      avatar_url: logoUrl,
       phone: profile.phone || phones[0] || '',
       escalation_email: profile.escalation_email || emails[0] || '',
       shipping_policy: profile.shipping_policy || '',

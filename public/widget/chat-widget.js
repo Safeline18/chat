@@ -265,12 +265,39 @@
     }
 
     .aip-bubble {
-      max-width: 75%;
-      padding: 10px 14px;
+      max-width: 100%;
+      padding: 12px 16px;
       border-radius: 18px;
-      font-size: 13.5px;
-      line-height: 1.55;
+      font-size: 14px;
+      line-height: 1.65;
       word-wrap: break-word;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      white-space: normal;
+    }
+
+    .aip-wa-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, #25D366, #128C7E);
+      color: white !important;
+      padding: 10px 18px;
+      border-radius: 25px;
+      text-decoration: none !important;
+      font-weight: 700;
+      font-size: 13.5px;
+      margin: 8px 0 4px 0;
+      box-shadow: 0 4px 15px rgba(37,211,102,0.4);
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .aip-wa-btn:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(37,211,102,0.6); }
+
+    .aip-link {
+      color: #64B5F6 !important;
+      text-decoration: underline;
+      font-weight: 600;
     }
 
     .aip-bubble-user {
@@ -532,9 +559,41 @@
         </div>
 
         <!-- FOOTER -->
-        <div id="aip-footer">Powered by <a href="#" target="_blank">AI Agent Platform</a></div>
+        <div id="aip-footer">Powered by <strong>رقمنها Raqminha AI Agent</strong></div>
       </div>
     `;
+  }
+
+  // =================== RICH MARKDOWN & WHATSAPP FORMATTER ===================
+  function formatMessageHtml(text) {
+    if (!text) return '';
+    let html = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
+    // Bold text: **text**
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#ffffff;font-weight:700;">$1</strong>');
+
+    // Clickable Links: [Title](URL)
+    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g, (match, title, url) => {
+      if (url.includes('wa.me') || url.includes('whatsapp.com')) {
+        return `<br><a href="${url}" target="_blank" class="aip-wa-btn">💬 ${title}</a><br>`;
+      }
+      return `<a href="${url}" target="_blank" class="aip-link">${title}</a>`;
+    });
+
+    // Standalone WhatsApp links
+    html = html.replace(/(https?:\/\/(?:wa\.me|api\.whatsapp\.com)[^\s<]+)/g, (url) => {
+      return `<br><a href="${url}" target="_blank" class="aip-wa-btn">💬 تواصل مباشر عبر الواتساب</a><br>`;
+    });
+
+    // Bullet points
+    html = html.replace(/^\s*[\-\*•]\s+(.*)$/gm, '• $1');
+
+    // Line breaks
+    html = html.replace(/\n/g, '<br>');
+    return html;
   }
 
   // =================== CORE FUNCTIONS ===================
@@ -548,11 +607,13 @@
 
     const time = new Date().toLocaleTimeString(isRTL() ? 'ar' : 'en', { hour: '2-digit', minute: '2-digit' });
 
+    const avatarHtml = config.avatar_url ? `<img src="${config.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : '🤖';
+
     msg.innerHTML = `
-      ${role !== 'user' ? `<div class="aip-msg-avatar-sm" style="background:${config.primary_color}33;color:${config.primary_color};">🤖</div>` : ''}
-      <div style="display:flex;flex-direction:column;align-items:${role === 'user' ? 'flex-end' : 'flex-start'};">
+      ${role !== 'user' ? `<div class="aip-msg-avatar-sm" style="background:${config.primary_color}33;color:${config.primary_color};">${avatarHtml}</div>` : ''}
+      <div style="display:flex;flex-direction:column;align-items:${role === 'user' ? 'flex-end' : 'flex-start'};max-width:85%;">
         <div class="aip-bubble ${role === 'user' ? 'aip-bubble-user' : 'aip-bubble-bot'}" ${role === 'user' ? `style="background:linear-gradient(135deg, ${config.primary_color}, ${config.secondary_color || '#4ECDC4'});"` : ''}>
-          ${escHtml(content)}
+          ${role === 'user' ? escHtml(content) : formatMessageHtml(content)}
         </div>
         <div class="aip-msg-time">${time}</div>
       </div>
