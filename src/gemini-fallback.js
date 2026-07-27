@@ -13,9 +13,9 @@ function findKbFallback(business, userMessage, detectedLang) {
   const text = (userMessage || '').toLowerCase().trim();
   const isArabic = detectedLang === 'ar' || /[\u0600-\u06FF]/.test(text);
 
-  const agentName = isArabic ? (business.agent_name_ar || business.agent_name || 'هالة') : (business.agent_name || 'Hala');
-  const businessName = isArabic ? (business.name_ar || business.name) : business.name;
-  const businessDesc = isArabic ? (business.description_ar || business.description) : business.description;
+  const agentName = isArabic ? (business?.agent_name_ar || business?.agent_name || 'هالة') : (business?.agent_name || 'Hala');
+  const businessName = isArabic ? (business?.name_ar || business?.name || 'الشركة') : (business?.name || 'the company');
+  const businessDesc = isArabic ? (business?.description_ar || business?.description || 'خدمات متميزة') : (business?.description || 'premium services');
 
   // 1. Direct KB Match
   for (const item of kb) {

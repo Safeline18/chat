@@ -45,8 +45,15 @@ router.post('/message', chatLimiter, async (req, res) => {
 
   } catch (err) {
     console.error('Chat error:', err.message);
+    let biz = {};
+    try {
+      if (req.body && req.body.businessId) {
+        biz = await businesses.getById(req.body.businessId);
+      }
+    } catch (e) {}
+
     const { findKbFallback } = require('../gemini-fallback');
-    const fallbackText = findKbFallback(req.body.business || {}, req.body.message || '', 'ar');
+    const fallbackText = findKbFallback(biz || {}, req.body.message || '', 'ar');
     res.json({
       success: true,
       conversationId: req.body.conversationId || `conv_${Date.now()}`,
