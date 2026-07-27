@@ -152,7 +152,7 @@ const ConversationSummary = mongoose.model('ConversationSummary', ConversationSu
 let cachedPromise = null;
 
 async function initDatabase() {
-  const uri = process.env.MONGODB_URI;
+  const uri = process.env.MONGODB_URI || 'mongodb+srv://safelinesccco_db_user:KIpb45HbZUPSEXw8@cluster0.wmnwki3.mongodb.net/ai_agent_platform?retryWrites=true&w=majority&appName=Cluster0';
   if (!uri) {
     console.warn('⚠️ MONGODB_URI is not set in environment variables');
     throw new Error('MONGODB_URI is not set in Vercel Environment Variables');
