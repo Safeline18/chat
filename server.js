@@ -444,6 +444,21 @@ async function start() {
   try {
     await initDatabase();
 
+    // Migration to apply new Navy & Gold luxury colors to existing businesses
+    try {
+      const mongoose = require('mongoose');
+      const Business = mongoose.model('Business');
+      const result = await Business.updateMany(
+        { primary_color: { $in: ['#6C63FF', '#6c63ff', null, '#4F46E5'] } },
+        { $set: { primary_color: '#1A1F36', secondary_color: '#C5A059' } }
+      );
+      if (result.modifiedCount > 0) {
+        console.log(`✅ Database Migration: Updated primary/secondary colors to Navy & Gold for ${result.modifiedCount} businesses`);
+      }
+    } catch (migErr) {
+      console.warn('⚠️ Database migration warning:', migErr.message);
+    }
+
     initGemini();
 
     server.listen(PORT, () => {

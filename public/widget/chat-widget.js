@@ -64,7 +64,7 @@
     #aip-widget {
       position: fixed;
       ${WIDGET_POSITION.includes('right') ? 'right: 24px;' : 'left: 24px;'}
-      bottom: 24px;
+      bottom: 96px;
       z-index: 2147483647;
       direction: ${isRTL() ? 'rtl' : 'ltr'};
     }
