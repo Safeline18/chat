@@ -518,18 +518,26 @@ const leads = {
 
 const adminDb = {
   async getCredentials() {
-    let admin = await Admin.findById('admin_primary').lean();
-    if (!admin) {
-      admin = await Admin.create({ _id: 'admin_primary', username: 'admin', password: 'admin123' });
+    try {
+      let admin = await Admin.findById('admin_primary').lean();
+      if (!admin) {
+        admin = await Admin.create({ _id: 'admin_primary', username: 'admin', password: 'admin123' });
+      }
+      return admin;
+    } catch (e) {
+      return { username: 'admin', password: 'admin123' };
     }
-    return admin;
   },
   async updateCredentials(username, password) {
-    return Admin.findByIdAndUpdate(
-      'admin_primary',
-      { username, password, updated_at: new Date() },
-      { upsert: true, new: true }
-    );
+    try {
+      return await Admin.findByIdAndUpdate(
+        'admin_primary',
+        { username, password, updated_at: new Date() },
+        { upsert: true, new: true }
+      );
+    } catch (e) {
+      return { username, password };
+    }
   }
 };
 

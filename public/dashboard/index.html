@@ -2486,6 +2486,7 @@ document.getElementById('convSearch').addEventListener('input', function() {
   );
   renderConvList(filtered);
 });
+</script>
 
 <!-- CHANNEL GUIDE MODAL -->
 <div class="modal-overlay" id="guideModal">
@@ -2506,13 +2507,14 @@ document.getElementById('convSearch').addEventListener('input', function() {
 
 <script>
   async function checkAuth() {
-    const token = localStorage.getItem('raqminha_admin_token');
+    const token = localStorage.getItem('raqminha_admin_token') || localStorage.getItem('adminToken');
     const modal = document.getElementById('loginModal');
     if (!token) {
       if (modal) modal.style.display = 'flex';
       return false;
     } else {
       if (modal) modal.style.display = 'none';
+      if (typeof CONFIG !== 'undefined') CONFIG.adminToken = token;
       return true;
     }
   }
@@ -2524,8 +2526,10 @@ document.getElementById('convSearch').addEventListener('input', function() {
     const password = document.getElementById('loginPassword').value;
     const errorEl = document.getElementById('loginError');
 
+    const url = (typeof CONFIG !== 'undefined' && CONFIG.serverUrl ? CONFIG.serverUrl : '') + '/api/admin/login';
+
     try {
-      const res = await fetch('/api/admin/login', {
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
@@ -2533,16 +2537,20 @@ document.getElementById('convSearch').addEventListener('input', function() {
       const data = await res.json();
       if (res.ok && data.success) {
         localStorage.setItem('raqminha_admin_token', data.token);
+        localStorage.setItem('adminToken', data.token);
+        if (typeof CONFIG !== 'undefined') CONFIG.adminToken = data.token;
         document.getElementById('loginModal').style.display = 'none';
         showToast('تم تسجيل الدخول بنجاح! مرحباً بك 🚀', 'success');
-        init();
+        initSocket();
+        await loadOverview();
+        await loadBusinesses();
       } else {
         errorEl.style.display = 'block';
         errorEl.textContent = data.error || 'اسم المستخدم أو كلمة المرور غير صحيحة';
       }
     } catch (err) {
       errorEl.style.display = 'block';
-      errorEl.textContent = 'حدث خطأ في الاتصال بالشبكة';
+      errorEl.textContent = 'حدث خطأ في الاتصال بالشبكة: ' + err.message;
     }
   });
 
