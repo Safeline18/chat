@@ -110,28 +110,8 @@ const uniqueAllowedOrigins = [...new Set(allowedOrigins)];
 app.use(
   cors({
     origin: function (origin, callback) {
-      // السماح بالطلبات التي لا تحتوي Origin
-      // مثل بعض server-to-server requests
-      if (!origin) {
-        return callback(null, true);
-      }
-
-      // السماح للدومينات المسجلة
-      if (uniqueAllowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      // السماح بالـ localhost أثناء التطوير
-      if (
-        origin.startsWith('http://localhost:') ||
-        origin.startsWith('http://127.0.0.1:')
-      ) {
-        return callback(null, true);
-      }
-
-      console.warn('⚠️ CORS blocked origin:', origin);
-
-      return callback(new Error('Not allowed by CORS'));
+      // السماح بجميع النطاقات (Origins) لتمكين تكامل الويدجت العام للمواقع المتعددة (Multi-Tenant Widget Embed)
+      return callback(null, true);
     },
 
     methods: [
